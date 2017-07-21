@@ -1,0 +1,109 @@
+#!/bin/bash
+
+USAGE="""
+Usage: ./version -t TAG [ OPTIONS ]
+    -t --tag
+        Specify the tag to apply to the repositories.
+    -p --path
+        The path in which to search for repos. Default is $PWD.
+    -r --remote
+        The remote on which to work in git. Default is origin.
+    -d --date
+        Search for last commit before date. Default is today.
+    --nopush
+        Do not push tag to remote. Default is false.
+"""
+
+
+_tag_repository() {
+    local repo; repo="$1"
+    local version; local commit;
+    cd "$repo" || return 1
+
+    version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+
+    git fetch -p "$REMOTE" "coog-$version" >/dev/null
+    commit="$(git rev-list -n 1 --before="$DATE" "coog-$version")"
+    echo "Creating tag $TAG on $commit"
+    git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
+
+    if [ "$NO_PUSH" == false ]; then
+        git push "$REMOTE" "coog-$TAG" >/dev/null
+    fi
+}
+
+
+_tag_clients() {
+    local repo; repo="$1"
+    local version; local commit; local client;
+    cd "$repo" || return 1
+
+    git fetch -p "$REMOTE" >/dev/null
+    version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+    for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
+        echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
+        commit=$(git rev-list -n 1 --before="$DATE" "$branch")
+        client=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+)-coog-$version:\1:")
+        echo "Applying tag $TAG to $branch"
+        git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date)" >/dev/null
+
+        if [ "$NO_PUSH" == false ]; then
+            git push "$REMOTE" "$client"-coog"-$TAG" >/dev/null
+        fi
+    done
+}
+
+main() {
+    for repo in $(find "$WORKING_PATH" -name .git -type d -prune | sed 's!\.git!!'); do
+
+        echo "Tagging repository $repo with $TAG"
+        if [ "$(basename "$repo")" == "customers" ]; then
+            (_tag_clients "$repo")
+        else
+            (_tag_repository "$repo")
+        fi
+    done
+}
+
+# Script begins here
+[ $# -lt 2 ] && echo "$USAGE" && exit 1
+
+while [[ $# -gt 1 ]]; do
+
+    arg="$1"
+    value="$2"
+    case $arg in
+        -t|--tag)
+            TAG="$value"
+            shift
+            ;;
+        -r|--remote)
+            REMOTE="$value"
+            shift
+            ;;
+        -d|--date)
+            DATE="$value"
+            shift
+            ;;
+        -p|--path)
+            WORKING_PATH="$value"
+            shift
+            ;;
+        --nopush)
+            NO_PUSH=true
+            ;;
+        *)
+            echo "Invalid argument $arg."
+            return 1
+            ;;
+    esac
+    shift
+done
+
+[ -z "$TAG" ] && echo "Missing required parameter.$USAGE" && exit 1
+[ -z "$REMOTE" ] && REMOTE="origin"
+[ -z "$DATE" ] && DATE="$(date --iso)"
+[ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
+[ -z "$NO_PUSH" ] && NO_PUSH=false
+
+main

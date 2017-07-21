@@ -1,0 +1,109 @@
+#!/bin/bash
+
+USAGE="""
+Usage: ./version -v VERSION -o OLD_VERSION -f OUTPUT_FILE [ OPTIONS ]
+    -v --version
+        The tag version you release.
+    -o --old-version
+        The old released version you want to see diff.
+    -f --output-file
+        The file name you will have as output (without '.html').
+    -p --path
+        The path in which to search for git tag. Default is $PWD.
+"""
+
+IFS=$'\n'
+
+customers_in_version=()
+
+calculate_customer_version(){
+    major_version=`expr substr $VERSION 1 4`
+
+    for customer in $(cat ./customers_version); do
+        customer_version="${customer:(-4)}"
+        if [[ $customer_version == *"$major_version"* ]]; then
+            name=${customer::-5}
+            customers_in_version+=($name)
+        fi
+    done
+}
+
+_list_common_issues() {
+    git \
+        -C "$1" \
+        rev-list --format=%B \
+        "coog-$VERSION" \
+        ^"coog-$OLD_VERSION" | \
+        grep -E "Fix #" | \
+        sed -e "s/.*Fix *# *\([0-9]\+\).*/\1/"
+}
+
+_list_customer_issues() {
+    git \
+        -C "$1" \
+        rev-list --format=%B \
+        "$2-coog-$VERSION" \
+        ^"$2-coog-$OLD_VERSION" | \
+        grep -E "Fix #" | \
+        sed -e "s/.*Fix *# *\([0-9]\+\).*/\1/"
+}
+
+_list_all_issues() {
+    for repo in $(cat ./repos.common); do
+        if [ "$repo" == "customers" ]; then
+            for customer in ${customers_in_version[@]}; do
+                echo "[$customer]" >> issues
+                _list_customer_issues $"$WORKING_PATH/$repo" "$customer" >> issues 2>/dev/null
+            done
+        else
+            echo "[$repo]" >> issues
+            _list_common_issues $"$WORKING_PATH/$repo" >> issues 2>/dev/null            
+        fi
+    done
+}
+
+main() {
+    calculate_customer_version
+    _list_all_issues
+    python issues_converter.py
+    # python bl_support.py $VERSION coog > $OUTPUT_FILE.html
+}
+
+# Script begins here
+[ $# -lt 2 ] && echo "$USAGE" && exit 1
+
+while [[ $# -gt 1 ]]; do
+
+    arg="$1"
+    value="$2"
+    case $arg in
+        -p|--path)
+            WORKING_PATH="$value"
+            shift
+            ;;
+        -v|--version)
+            VERSION="$value"
+            shift
+            ;;
+        -o|--old-version)
+            OLD_VERSION="$value"
+            shift
+            ;;
+        -f|--output-file)
+            OUTPUT_FILE="$value"
+            shift
+            ;;
+        *)
+            echo "Invalid argument $arg."
+            return 1
+            ;;
+    esac
+    shift
+done
+
+[ -z "$VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
+[ -z "$OLD_VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
+[ -z "$OUTPUT_FILE" ] && echo "Missing required parameter.$USAGE" && exit 1
+[ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
+
+main "$@"
