@@ -13,7 +13,7 @@ def read_file():
             try:
                 line = int(line)
             except ValueError:
-                project = line[:-1]
+                project = line[1:-2]
                 projects[project] = []
                 continue
             projects[project].append(line)
