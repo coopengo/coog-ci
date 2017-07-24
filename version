@@ -23,7 +23,7 @@ _tag_repository() {
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
 
     git fetch -p "$REMOTE" "coog-$version" >/dev/null
-    commit="$(git rev-list -n 1 --before="$DATE" "coog-$version")"
+    commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/coog-$version")"
     echo "Creating tag $TAG on $commit"
     git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
 
