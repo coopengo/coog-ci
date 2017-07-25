@@ -7,7 +7,7 @@ import json
 
 conf_file = 'bl.conf'
 try:
-    with open(conf_file) as conf:
+    with open(conf_file, 'r') as conf:
         data = json.load(conf)
 except IOError:
     sys.stderr.write('No conf file found\n')

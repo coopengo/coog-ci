@@ -7,7 +7,7 @@ projects = {}
 
 
 def read_file():
-    with open('issues') as file:
+    with open('issues', 'r') as file:
         project = ''
         for line in file:
             try:
