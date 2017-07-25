@@ -1,13 +1,11 @@
 #!/bin/bash
 
 USAGE="""
-Usage: ./version -v VERSION -o OLD_VERSION -f OUTPUT_FILE [ OPTIONS ]
+Usage: ./report -v VERSION -o OLD_VERSION [ OPTIONS ]
     -v --version
         The tag version you release.
     -o --old-version
         The old released version you want to see diff.
-    -f --output-file
-        The file name you will have as output (without '.html').
     -p --path
         The path in which to search for git tag. Default is $PWD.
 """
@@ -62,15 +60,23 @@ _list_all_issues() {
     done
 }
 
+_docker_images(){
+    for customer in ${customers_in_version[@]}; do
+        ./create_docker_image -c "$customer" -v "$VERSION"
+    done 
+}
+
 main() {
     calculate_customer_version
-    _list_all_issues
-    python issues_converter.py
-    # python bl_support.py $VERSION coog > $OUTPUT_FILE.html
+    # _list_all_issues
+    # python issues_converter.py
+    # python create_version.py $VERSION
+    # python bl_support.py $VERSION
+    _docker_images
 }
 
 # Script begins here
-[ $# -lt 2 ] && echo "$USAGE" && exit 1
+[ $# -lt 3 ] && echo "$USAGE" && exit 1
 
 while [[ $# -gt 1 ]]; do
 
@@ -89,10 +95,6 @@ while [[ $# -gt 1 ]]; do
             OLD_VERSION="$value"
             shift
             ;;
-        -f|--output-file)
-            OUTPUT_FILE="$value"
-            shift
-            ;;
         *)
             echo "Invalid argument $arg."
             return 1
@@ -103,7 +105,6 @@ done
 
 [ -z "$VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$OLD_VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
-[ -z "$OUTPUT_FILE" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
 
 main "$@"
