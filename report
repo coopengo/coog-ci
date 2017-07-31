@@ -26,6 +26,10 @@ calculate_customer_version(){
     done
 }
 
+_fetch_origin() {
+    git fetch
+}
+
 _list_common_issues() {
     git \
         -C "$1" \
@@ -48,6 +52,7 @@ _list_customer_issues() {
 
 _list_all_issues() {
     for repo in $(cat ./repos.common); do
+        _fetch_origin
         if [ "$repo" == "customers" ]; then
             for customer in ${customers_in_version[@]}; do
                 echo "[$customer]" >> issues
@@ -68,10 +73,10 @@ _docker_images(){
 
 main() {
     calculate_customer_version
-    # _list_all_issues
-    # python issues_converter.py
-    # python create_version.py $VERSION
-    # python bl_support.py $VERSION
+    _list_all_issues
+    python issues_converter.py
+    python create_version.py $VERSION
+    python bl_support.py $VERSION
     _docker_images
 }
 
