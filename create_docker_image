@@ -8,7 +8,7 @@ Usage: ./create_docker_image -c CUSTOMER -v VERSION
         The tag version you release.
 """
 
-PATH_TO_COOG_ADMIN='/home/michael/workspaces/coog-admin/'
+PATH_TO_COOG_ADMIN='/home/coog/workspace/coog-admin/'
 
 _generate() {
     $PATH_TO_COOG_ADMIN/build coog/$1:$2 \
