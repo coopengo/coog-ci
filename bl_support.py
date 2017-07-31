@@ -110,7 +110,7 @@ def main():
             delivery_notes['coog'] = sort_before_report('coog', issues)
 
     for project in delivery_notes.keys():
-        filename = project + version_name + '.html'
+        filename = project + '-' + version_name + '.html'
         if project != 'coog':
             delivery_notes[project]['features'].update(
                 delivery_notes['coog']['features'])
