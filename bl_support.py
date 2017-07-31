@@ -54,7 +54,8 @@ def sort_before_report(project, issues):
                 if not x.get('multiple', False)}
         if issue['project']['id'] not in COMMON_PROJECTS_ID and \
                 project == 'coog':
-            sys.stderr.write('issue %s not in the right project' % issue)
+            sys.stderr.write(
+                '\nissue %s not in the right project\n' % issue['id'])
             # client issue => need to manual link it to client project
             continue
         issue['subject'] = issue['subject'].encode('utf-8')
@@ -138,7 +139,7 @@ def get_related_issues(issue):
         for relate in issue['relations']:
             issue_id = get_issue_id(relate['issue_id'])
             issue_to_id = get_issue_id(relate['issue_to_id'])
-            if issue_id == issue['id']:
+            if relate['issue_id'] == issue['id']:
                 relates.append(issue_to_id)
             else:
                 relates.append(issue_id)
