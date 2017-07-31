@@ -75,7 +75,7 @@ main() {
     calculate_customer_version
     _list_all_issues
     python issues_converter.py
-    python create_version.py $VERSION
+    python create_versions.py $VERSION
     python bl_support.py $VERSION
     _docker_images
 }
