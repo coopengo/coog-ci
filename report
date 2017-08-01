@@ -17,7 +17,7 @@ customers_in_version=()
 calculate_customer_version(){
     major_version=`expr substr $VERSION 1 4`
 
-    for customer in $(cat ./customers_version); do
+    for customer in $(cat ./customers); do
         customer_version="${customer:(-4)}"
         if [[ $customer_version == *"$major_version"* ]]; then
             name=${customer::-5}
