@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: ./register TAG"
+    exit 1
+fi
+
+TAG="$1"
+DOCKER_USER=coopengo
+
+
+build_client() {
+    DOCKER_IMAGE_NAME="$1"
+    GIT_TAG="coog-$2"
+    CLIENT_NAME="$3"
+
+    # shellcheck disable=SC1091
+    source "../build-utils.sh"
+
+    build "$DOCKER_IMAGE_NAME"      \
+        "coog:$GIT_TAG"             \
+        "trytond:$GIT_TAG"          \
+        "trytond-modules:$GIT_TAG"  \
+        "sao:$GIT_TAG"              \
+        "coog-bench:$GIT_TAG"       \
+        "customers:$CLIENT_NAME-$GIT_TAG"
+}
+
+docker login
+# git clone --depth 1 "git@github.com:coopengo/coog-admin.git" coog-admin
+
+while read -r CLIENT; do
+    [ -z "$CLIENT" ] && continue
+
+    A=(${CLIENT//:/ })
+    CLIENT_NAME=${A[0]}
+    CLIENT_VERSION=${A[1]}
+
+    if [[ ! "$TAG" =~ ^$CLIENT_VERSION ]]; then
+        echo "client version ($CLIENT_VERSION) does not match specified tag ($TAG)." && continue
+    fi
+
+    DOCKER_IMAGE_NAME="$DOCKER_USER/coog:$CLIENT_NAME-$TAG"
+
+    (cd coog-admin/images/coog/ && build_client "$DOCKER_IMAGE_NAME" "$TAG" "$CLIENT_NAME")
+
+    docker push "$DOCKER_IMAGE_NAME"
+
+done < customers
+
+# rm -rf coog-admin
+docker logout
