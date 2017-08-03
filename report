@@ -77,6 +77,7 @@ main() {
     python issues_converter.py
     python create_versions.py $VERSION
     python bl_support.py $VERSION
+    python html_to_pdf.py
     _docker_images
 }
 
