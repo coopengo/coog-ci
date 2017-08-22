@@ -26,7 +26,6 @@ build_client() {
         "customers:$CLIENT_NAME-$GIT_TAG"
 }
 
-docker login
 # git clone --depth 1 "git@github.com:coopengo/coog-admin.git" coog-admin
 
 while read -r CLIENT; do
@@ -49,4 +48,3 @@ while read -r CLIENT; do
 done < customers
 
 # rm -rf coog-admin
-docker logout
