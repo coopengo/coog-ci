@@ -83,6 +83,7 @@ def link_issue_to_version(issue_id, project_name):
     parameters_json = json.dumps(linked_version)
     request = requests.put(put_url, auth=(API_KEY, ''), data=parameters_json,
         headers=HEADERS)
+    print 'linking issue %s to project %s' % (issue_id, project_name)
     test_request(request)
 
 

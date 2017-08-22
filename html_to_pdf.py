@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import pdfkit
-from os import listdir
+from os import listdir, system
 from os.path import isfile, join, dirname, realpath
 
 
@@ -23,7 +22,7 @@ def convert_to_pdf():
         print in_file
         out_file = in_file[:-5] + '.pdf'
         print out_file
-        pdfkit.from_file(in_file, out_file)
+        system('unoconv -f pdf -o %s %s' % (out_file, in_file))
 
 
 def main():
