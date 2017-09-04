@@ -1,7 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from os import listdir, system
+# pdfkit needs wkhtmltopdf to work
+# wkhtmltopdf needs an X server or you can use this method :
+# https://github.com/JazzCore/python-pdfkit/wiki/Using-wkhtmltopdf-without-X-server
+
+import pdfkit
+from os import listdir
 from os.path import isfile, join, dirname, realpath
 
 
@@ -22,7 +27,7 @@ def convert_to_pdf():
         print in_file
         out_file = in_file[:-5] + '.pdf'
         print out_file
-        system('unoconv -f pdf -o %s %s' % (out_file, in_file))
+        pdfkit.from_file(in_file, out_file)
 
 
 def main():
