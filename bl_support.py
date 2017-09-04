@@ -206,7 +206,7 @@ def report_html(filename, version_name, features, bugs, params, scripts):
             count += 1
             print '<table>'
             print '    <tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
-                '<th>Fiches liées</th></tr>'
+                '<th>Description</th><th>Fiches liées</th></tr>'
             for priority in ('Immediate', 'High', 'Normal', 'Low'):
                 issues = features[priority]
                 if not issues:
@@ -215,7 +215,8 @@ def report_html(filename, version_name, features, bugs, params, scripts):
                     print '    <tr><td>' + '</td><td>'.join([get_issue_id(
                                 issue['id']),
                             issue['priority']['name'].encode('utf-8'),
-                            issue['subject'],
+                            issue['subject'].encode('utf-8'),
+                            issue['description'].encode('utf-8'),
                             '        <div>' + '</div>'.join(
                                 get_related_issues(issue)) + '</div>',
                             ]) + '</td></tr>'
@@ -226,7 +227,7 @@ def report_html(filename, version_name, features, bugs, params, scripts):
             count += 1
             print '<table>'
             print '    <tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
-                '<th>Fiches liées</th></tr>'
+                '<th>Description</th><th>Fiches liées</th></tr>'
             for priority in ('Immediate', 'High', 'Normal', 'Low'):
                 issues = bugs[priority]
                 if not issues:
@@ -235,7 +236,8 @@ def report_html(filename, version_name, features, bugs, params, scripts):
                     print '    <tr><td>' + '</td><td>'.join([get_issue_id(
                                 issue['id']),
                             issue['priority']['name'].encode('utf-8'),
-                            issue['subject'],
+                            issue['subject'].encode('utf-8'),
+                            issue['description'].encode('utf-8'),
                             '        <div>' + '</div>'.join(
                                 get_related_issues(issue)) + '</div>',
                             ]) + '</td></tr>'
