@@ -13,7 +13,8 @@ Usage: ./create_docker_image -c CUSTOMER -v VERSION
 PATH_TO_COOG_ADMIN='/home/coog/workspace/coog-admin/'
 
 _generate() {
-    $PATH_TO_COOG_ADMIN/build localhost:5000/coog/$1:$2 \
+    HASH="$(echo $1 | md5sum | cut -c-6)"
+    $PATH_TO_COOG_ADMIN/build localhost:5000/coog/$HASH:$2 \
         customers:$1-coog-$2 \
         coog:coog-$2 \
         trytond:coog-$2 \
