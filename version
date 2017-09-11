@@ -53,8 +53,43 @@ _tag_clients() {
     done
 }
 
+
+update_version() {
+    local repo; repo="$1"
+    local version; local local_branch;
+    cd $repo || return 1
+
+    version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+    if [ "$(basename "$repo")" == "coog" ]; then
+        git checkout "coog-$version" 
+        git pull
+        find . -name tryton.cfg -exec \
+            sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$TAG/" {} +
+        if [ "$NO_PUSH" == false ]; then
+            git commit -am "packaging version $2"
+            git push "$REMOTE" "coog-$version" >/dev/null
+        fi
+    else
+        for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
+            local_branch=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+-coog-$version):\1:")
+            git checkout "$local_branch"
+            git pull
+            find . -name tryton.cfg -exec \
+                sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$TAG/" {} +
+            if [ "$NO_PUSH" == false ]; then
+                git commit -am "packaging version $2"
+                git push "$REMOTE" "coog-$version" >/dev/null
+            fi
+        done
+    fi
+}
+
 main() {
     for repo in $(find "$WORKING_PATH" -name .git -type d -prune | sed 's!\.git!!'); do
+        echo "Updating version number"
+        if [[ "$(basename "$repo")" == "coog" || "$(basename "$repo")" == "customers" ]]; then
+            (update_version $repo "$TAG")
+        fi
 
         echo "Tagging repository $repo with $TAG"
         if [ "$(basename "$repo")" == "customers" ]; then
