@@ -13,13 +13,17 @@ This repo contains a set of scripts used for coog continuous integration.
 ```
 
 These commands should :
+- update in-app version
 - create tags in all coog repositories
 - create a version for each customer in Redmine
 - link issues to the matching created version
 - create delivery notes for customers and convert to pdf
 - create Docker image for each customer
+- push Docker image on CI registry
 
 ### What to do manually
 
 - update customers dev environnement
 - email customers to warn them about the release (with the pdf report)
+- update customers file with version number and release date
+- update customers issues to "resolved"

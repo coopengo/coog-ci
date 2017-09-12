@@ -49,7 +49,7 @@ def sort_before_report(project, issues):
     for issue in issues:
         issue = get_issue(issue)
         issue['custom_fields'] = {x['id']:
-                x.get('value', '').encode('utf-8')
+                x.get('value', '')
                 for x in issue.get('custom_fields', {})
                 if not x.get('multiple', False)}
         if issue['project']['id'] not in COMMON_PROJECTS_ID and \
@@ -58,7 +58,6 @@ def sort_before_report(project, issues):
                 '\nissue %s not in the right project\n' % issue['id'])
             # client issue => need to manual link it to client project
             continue
-        issue['subject'] = issue['subject'].encode('utf-8')
         issue['updated_on'] = datetime.datetime.strptime(
             issue['updated_on'], '%Y-%m-%dT%H:%M:%SZ')
         if issue['tracker']['name'] == 'Feature':
@@ -129,8 +128,8 @@ def main():
 
 
 def get_issue_id(issue):
-    return '<a href="https://support.coopengo.com/issues/%i' \
-        % issue + '">%i</a>' % issue
+    return u'<a href="https://support.coopengo.com/issues/%i' \
+        % issue + u'">%i</a>' % issue
 
 
 def get_related_issues(issue):
@@ -149,131 +148,137 @@ def get_related_issues(issue):
 
 def report_html(filename, version_name, features, bugs, params, scripts):
     with open('reports/' + filename, 'w') as file:
-        sys.stdout = file
-        print '<html>'
-        print '<head>'
-        print '<meta charset="utf-8"/>'
-        print '<style>'
-        print '''
-        h1 {
-            font-size: 150%;
-        }
-        h2 {
-            font-size: 120%;
-        }
-        table {
-            border:#ccc 1px solid
-            table-layout: fixed;
-            width: 700px;
-            border-width: 1px;
-            border-color: #666666;
-            border-collapse: collapse;
-            border-spacing: 10px;
-        }
-        th {
-            font-size: 90%;
-            align: left;
-            border-width: 1px;
-            padding: 5px;
-            border-style: solid;
-            border-color: #666666;
-            background-color: #dedede;
-        }
-        td {
-            font-size: 80%;
-            border-width: 1px;
-            vertical-align: middle;
-            padding: 2px;
-            border-style: solid;
-            border-color: #666666;
-            background-color: #ffffff;
-        }
-        tr td:first-child {
-            width: 70px;
-        }
-        tr td:last-child {
-            min-width: 40px;
-        }
-        '''
-        print '</style>'
-        print '</head>'
-        print '<body>'
+        content = """
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <style>
+                    h1 {
+                        font-size: 150%;
+                    }
+                    h2 {
+                        font-size: 120%;
+                    }
+                    table {
+                        border:#ccc 1px solid
+                        table-layout: fixed;
+                        width: 700px;
+                        border-width: 1px;
+                        border-color: #666666;
+                        border-collapse: collapse;
+                        border-spacing: 10px;
+                    }
+                    th {
+                        font-size: 90%;
+                        align: left;
+                        border-width: 1px;
+                        padding: 5px;
+                        border-style: solid;
+                        border-color: #666666;
+                        background-color: #dedede;
+                    }
+                    td {
+                        font-size: 80%;
+                        border-width: 1px;
+                        vertical-align: middle;
+                        padding: 2px;
+                        border-style: solid;
+                        border-color: #666666;
+                        background-color: #ffffff;
+                    }
+                    tr td:first-child {
+                        width: 70px;
+                    }
+                    tr td:last-child {
+                        min-width: 40px;
+                    }
+                </style>
+            </head>
+            <body>\n"""
 
         count = 1
-        print '<h2>Version: %s</h2>' % version_name
+        content += '        <h2>Version: %s</h2>\n' % version_name
         if features:
-            print '<h2>%i. Fonctionnalités</h2>' % count
+            content += '        <h2>%i. Fonctionnalités</h2>\n' % count
             count += 1
-            print '<table>'
-            print '    <tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
-                '<th>Description</th><th>Fiches liées</th></tr>'
+            content += '        <table>\n'
+            content += '           ' + \
+                '<tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
+                '<th>Description</th><th>Fiches liées</th></tr>\n'
             for priority in ('Immediate', 'High', 'Normal', 'Low'):
                 issues = features[priority]
                 if not issues:
                     continue
                 for issue in issues:
-                    print '    <tr><td>' + '</td><td>'.join([get_issue_id(
-                                issue['id']),
-                            issue['priority']['name'].encode('utf-8'),
-                            issue['subject'].encode('utf-8'),
-                            issue['description'].encode('utf-8'),
-                            '        <div>' + '</div>'.join(
+                    content += ('            <tr><td>' +
+                        '</td><td>'.join([get_issue_id(
+                            issue['id']),
+                            issue['priority']['name'],
+                            issue['subject'],
+                            issue['description'],
+                            '<div>' + '</div>'.join(
                                 get_related_issues(issue)) + '</div>',
-                            ]) + '</td></tr>'
-            print '</table>'
+                            ]) + '</td></tr>\n').encode('utf8')
+            content += '        </table>\n'
 
         if bugs:
-            print '<h2>%i. Anomalies</h2>' % count
+            content += '        <h2>%i. Anomalies</h2>\n' % count
             count += 1
-            print '<table>'
-            print '    <tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
-                '<th>Description</th><th>Fiches liées</th></tr>'
+            content += '        <table>\n'
+            content += '           ' + \
+                '<tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
+                '<th>Description</th><th>Fiches liées</th></tr>\n'
             for priority in ('Immediate', 'High', 'Normal', 'Low'):
                 issues = bugs[priority]
                 if not issues:
                     continue
                 for issue in issues:
-                    print '    <tr><td>' + '</td><td>'.join([get_issue_id(
-                                issue['id']),
-                            issue['priority']['name'].encode('utf-8'),
-                            issue['subject'].encode('utf-8'),
-                            issue['description'].encode('utf-8'),
-                            '        <div>' + '</div>'.join(
+                    content += ('            <tr><td>' +
+                        '</td><td>'.join([get_issue_id(
+                            issue['id']),
+                            issue['priority']['name'],
+                            issue['subject'],
+                            issue['description'],
+                            '<div>' + '</div>'.join(
                                 get_related_issues(issue)) + '</div>',
-                            ]) + '</td></tr>'
-            print '</table>'
+                            ]) + '</td></tr>\n').encode('utf8')
+            content += '        </table>\n'
 
         if params:
-            print '<h2>%i. Fiches avec paramétrage</h2>' % count
+            content += '        <h2>%i. Fiches avec paramétrage</h2>\n' % count
             count += 1
-            print '<table>'
-            print '    <tr><th>#</th><th>Subject</th><th width="200">Param ' +\
-                '</th><th>Fiches liées</th></tr>'
+            content += '        <table>\n'
+            content += '           ' + \
+                '<tr><th>#</th><th>Sujet</th><th width="200">Param</th>' + \
+                '<th>Fiches liées</th></tr>\n'
             for issue in params:
-                print '    <tr><td>' + get_issue_id(issue['id']) + \
-                    '</td><td>' + \
-                    issue['subject'] + '</td><td>' + \
-                    issue['custom_fields'][7] + '</td><td>' + \
-                    '        <div>' + '</div>'.join(
-                        get_related_issues(issue)) + '</div>',
-            print '</table>'
+                content += ('            <tr><td>' +
+                    get_issue_id(issue['id']) + '</td><td>' +
+                    issue['subject'] + '</td><td>' +
+                    issue['custom_fields'][7] + '</td><td>' +
+                    '<div>' + '</div>'.join(
+                        get_related_issues(issue)) + '</div>\n').encode('utf8')
+            content += '        </table>\n'
 
         if scripts:
-            print '<h2>%i. Fiche avec scripts</h2>' % count
+            '<h2>%i. Fiche avec scripts</h2>\n' % count
             count += 1
-            print '<table>'
-            print '    <tr><th>#</th><th>Subject</th><th width="200">Script' +\
-                '</th><th>Fiches liées</th></tr>'
+            content += '        <table>\n'
+            content += '           ' + \
+                '<tr><th>#</th><th>Subject</th><th width="200">Script' + \
+                '</th><th>Fiches liées</th></tr>\n'
             for issue in scripts:
-                print '    <tr><td>' + get_issue_id(issue['id']) + \
-                    '</td><td>' + \
-                    issue['subject'] + '</td><td>' + \
-                    issue['custom_fields'][9] + '</td><td>' + \
-                    '        <div>' + '</div>'.join(
-                        get_related_issues(issue)) + '</div>',
-            print '</table>'
-        print '</body>'
-        print '</html>'
+                content += ('            <tr><td>' +
+                    get_issue_id(issue['id']) + '</td><td>' +
+                    issue['subject'] + '</td><td>' +
+                    issue['custom_fields'][9] + '</td><td>' +
+                    '<div>' + '</div>'.join(
+                        get_related_issues(issue)) + '</div>\n').encode('utf8')
+            content += '        </table>\n'
+        content += """
+            </body>
+        </html>"""
+        file.write(content)
 
 
 if __name__ == '__main__':
