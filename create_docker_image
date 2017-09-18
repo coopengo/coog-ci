@@ -13,8 +13,7 @@ Usage: ./create_docker_image -c CUSTOMER -v VERSION
 PATH_TO_COOG_ADMIN='/home/coog/workspace/coog-admin/'
 
 _generate() {
-    HASH="$(echo $1 | md5sum | cut -c-6)"
-    $PATH_TO_COOG_ADMIN/build localhost:5000/coog/$HASH:$2 \
+    $PATH_TO_COOG_ADMIN/build coopengo/coog-$1:$2 \
         customers:$1-coog-$2 \
         coog:coog-$2 \
         trytond:coog-$2 \
@@ -25,7 +24,7 @@ _generate() {
 
 main(){
     _generate $CUSTOMER $VERSION
-    docker push "localhost:5000/coog/$CUSTOMER:$VERSION"
+    docker push "coopengo/coog-$CUSTOMER:$VERSION"
 }
 
 # Script begins here
