@@ -24,6 +24,7 @@ These commands should :
 ### What to do manually
 
 - update customers dev environnement
+- create new announcement
 - email customers to warn them about the release (with the pdf report)
 - update customers file with version number and release date
 - update customers issues to "resolved"

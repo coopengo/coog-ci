@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import datetime
 import requests
 import sys
 import json
@@ -43,11 +42,17 @@ def get_issue(issue):
 
 
 def sort_before_report(project, issues):
+    print project
     features, bugs, params, scripts = \
         defaultdict(list), defaultdict(list), [], []
 
     for issue in issues:
         issue = get_issue(issue)
+        if 'relations' in issue:
+            relations = []
+            for r in issue['relations']:
+                relations.append(r['issue_id'])
+                relations.append(r['issue_to_id'])
         issue['custom_fields'] = {x['id']:
                 x.get('value', '')
                 for x in issue.get('custom_fields', {})
@@ -58,18 +63,28 @@ def sort_before_report(project, issues):
                 '\nissue %s not in the right project\n' % issue['id'])
             # client issue => need to manual link it to client project
             continue
-        issue['updated_on'] = datetime.datetime.strptime(
-            issue['updated_on'], '%Y-%m-%dT%H:%M:%SZ')
-        if issue['tracker']['name'] == 'Feature':
-            features[issue['priority']['name']].append(issue)
+        issue_triggered_by_customer = False
+        if project.upper() not in str(issue['project']).upper() and relations:
+            for relation in relations:
+                print relation
+                if relation.upper() in str(issue['project']).upper():
+                    issue_triggered_by_customer = True
         else:
-            bugs[issue['priority']['name']].append(issue)
-        # Custom field 7 => Param
-        if issue['custom_fields'].get(7, ''):
-            params.append(issue)
-        # Custom field 9 => Script
-        if issue['custom_fields'].get(9, ''):
-            scripts.append(issue)
+            issue_triggered_by_customer = True
+        print issue_triggered_by_customer
+        if issue_triggered_by_customer:
+            # issue['updated_on'] = datetime.datetime.strptime(
+            #     issue['updated_on'], '%Y-%m-%dT%H:%M:%SZ')
+            if issue['tracker']['name'] == 'Feature':
+                features[issue['priority']['name']].append(issue)
+            else:
+                bugs[issue['priority']['name']].append(issue)
+            # Custom field 7 => Param
+            if issue['custom_fields'].get(7, ''):
+                params.append(issue)
+            # Custom field 9 => Script
+            if issue['custom_fields'].get(9, ''):
+                scripts.append(issue)
     sorted_project = {}
     sorted_project['features'] = features
     sorted_project['bugs'] = bugs
