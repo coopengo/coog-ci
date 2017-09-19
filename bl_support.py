@@ -42,14 +42,13 @@ def get_issue(issue):
 
 
 def sort_before_report(project, issues):
-    print project
-    features, bugs, params, scripts = \
-        defaultdict(list), defaultdict(list), [], []
+    features, bugs, params, scripts, opened = \
+        defaultdict(list), defaultdict(list), [], [], []
 
     for issue in issues:
         issue = get_issue(issue)
+        relations = []
         if 'relations' in issue:
-            relations = []
             for r in issue['relations']:
                 relations.append(r['issue_id'])
                 relations.append(r['issue_to_id'])
@@ -66,15 +65,13 @@ def sort_before_report(project, issues):
         issue_triggered_by_customer = False
         if project.upper() not in str(issue['project']).upper() and relations:
             for relation in relations:
-                print relation
                 if relation.upper() in str(issue['project']).upper():
                     issue_triggered_by_customer = True
         else:
             issue_triggered_by_customer = True
-        print issue_triggered_by_customer
+
         if issue_triggered_by_customer:
-            # issue['updated_on'] = datetime.datetime.strptime(
-            #     issue['updated_on'], '%Y-%m-%dT%H:%M:%SZ')
+            opened.append(issue)
             if issue['tracker']['name'] == 'Feature':
                 features[issue['priority']['name']].append(issue)
             else:
@@ -90,6 +87,7 @@ def sort_before_report(project, issues):
     sorted_project['bugs'] = bugs
     sorted_project['params'] = params
     sorted_project['scripts'] = scripts
+    sorted_project['opened'] = opened
     return sorted_project
 
 
@@ -139,7 +137,8 @@ def main():
                 delivery_notes[project]['features'],
                 delivery_notes[project]['bugs'],
                 delivery_notes[project]['params'],
-                delivery_notes[project]['scripts'])
+                delivery_notes[project]['scripts'],
+                delivery_notes[project]['opened'])
 
 
 def get_issue_id(issue):
@@ -161,7 +160,8 @@ def get_related_issues(issue):
     return []
 
 
-def report_html(filename, version_name, features, bugs, params, scripts):
+def report_html(filename, version_name, features, bugs, params, scripts,
+        opened):
     with open('reports/' + filename, 'w') as file:
         content = """
         <html>
@@ -213,13 +213,33 @@ def report_html(filename, version_name, features, bugs, params, scripts):
 
         count = 1
         content += '        <h2>Version: %s</h2>\n' % version_name
+        if opened:
+            content += '        <h2>%i. Vos tickets</h2>\n' % count
+            count += 1
+            content += '        <table>\n'
+            content += '           ' + \
+                '<tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
+                '<th>Fiches liées</th></tr>\n'
+
+            for issue in opened:
+                content += ('            <tr><td>' +
+                    '</td><td>'.join([get_issue_id(
+                        issue['id']),
+                        issue['priority']['name'],
+                        issue['subject'],
+                        '<div>' + '</div>'.join(
+                            get_related_issues(issue)) + '</div>',
+                        ]) + '</td></tr>\n').encode('utf8')
+            content += '        </table>\n'
+
         if features:
             content += '        <h2>%i. Fonctionnalités</h2>\n' % count
             count += 1
             content += '        <table>\n'
             content += '           ' + \
-                '<tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
-                '<th>Description</th><th>Fiches liées</th></tr>\n'
+                '<tr><th>#</th><th>Priorité</th>' + \
+                '<th>Sujet et Description</th>' + \
+                '<th>Fiches liées</th></tr>\n'
             for priority in ('Immediate', 'High', 'Normal', 'Low'):
                 issues = features[priority]
                 if not issues:
@@ -229,8 +249,9 @@ def report_html(filename, version_name, features, bugs, params, scripts):
                         '</td><td>'.join([get_issue_id(
                             issue['id']),
                             issue['priority']['name'],
-                            issue['subject'],
-                            issue['description'],
+                            issue['subject'] + '<hr/>'
+                            + (issue['description']
+                                or '<i>pas de description...</i>'),
                             '<div>' + '</div>'.join(
                                 get_related_issues(issue)) + '</div>',
                             ]) + '</td></tr>\n').encode('utf8')
@@ -241,8 +262,9 @@ def report_html(filename, version_name, features, bugs, params, scripts):
             count += 1
             content += '        <table>\n'
             content += '           ' + \
-                '<tr><th>#</th><th>Priorité</th><th>Sujet</th>' + \
-                '<th>Description</th><th>Fiches liées</th></tr>\n'
+                '<tr><th>#</th><th>Priorité</th>' + \
+                '<th>Sujet et Description</th>' + \
+                '<th>Fiches liées</th></tr>\n'
             for priority in ('Immediate', 'High', 'Normal', 'Low'):
                 issues = bugs[priority]
                 if not issues:
@@ -252,8 +274,9 @@ def report_html(filename, version_name, features, bugs, params, scripts):
                         '</td><td>'.join([get_issue_id(
                             issue['id']),
                             issue['priority']['name'],
-                            issue['subject'],
-                            issue['description'],
+                            issue['subject'] + '<hr/>'
+                            + (issue['description']
+                                or '<i>pas de description...</i>'),
                             '<div>' + '</div>'.join(
                                 get_related_issues(issue)) + '</div>',
                             ]) + '</td></tr>\n').encode('utf8')
