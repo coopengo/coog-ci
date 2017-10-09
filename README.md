@@ -4,7 +4,7 @@ This repo contains a set of scripts used for coog continuous integration.
 
 ### How to use it
 
-- connect to the integration server
+- connect to the integration server (ci.coopengo.com)
 - go to coog-ci
 - run
 ```
