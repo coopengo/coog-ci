@@ -4,8 +4,14 @@ This repo contains a set of scripts used for coog continuous integration.
 
 ### How to use it
 
-- connect to the integration server (ci.coopengo.com)
+- connect to the integration server
+```
+ssh coog@ci.coopengo.com
+```
 - go to coog-ci
+```
+cd coog-ci
+```
 - run
 ```
 ./version -t <tag> -p /home/coog/workspace -d <last_success_test_passing_date>
