@@ -12,6 +12,7 @@ This repo contains a set of scripts used for coog continuous integration.
 ./report -v <version> -o <version_you_want_to_diff_with> -p /home/coog/workspace
 ```
 **Warning** : The version will include all commits **strictly <** to the given date, so if you want to include today's commits, you should give the day after (tomorrow)
+
 These commands should :
 - update in-app version
 - create tags in all coog repositories
