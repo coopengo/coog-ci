@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 USAGE="""
 Usage: ./version -t TAG [ OPTIONS ]
@@ -10,6 +10,8 @@ Usage: ./version -t TAG [ OPTIONS ]
         The remote on which to work in git. Default is origin.
     -d --date
         Search for last commit before date. Default is today.
+    -m --major
+        Indicate if this is a new major version, need -t with major version number.
     --nopush
         Do not push tag to remote. Default is false.
 """
@@ -20,16 +22,39 @@ _tag_repository() {
     local version; local commit;
     cd "$repo" || return 1
 
-    version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
-
-    git fetch -p "$REMOTE" "coog-$version" >/dev/null
-    commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/coog-$version")"
-    echo "Creating tag $TAG on $commit"
-    git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
-
-    if [ "$NO_PUSH" == false ]; then
-        git push "$REMOTE" "coog-$TAG" >/dev/null
+    if [ "$MAJOR" == false ]; then
+        version=$(echo "coog-$TAG" | grep -Po '^(coog-\d+\.\d+)')
+    else
+        version='master'
     fi
+
+    git fetch -p "$REMOTE" "$version" >/dev/null
+    if [ "$MAJOR" == true ]; then 
+        git checkout master
+        git pull
+        git checkout -b "coog-$TAG"
+    fi
+
+        if [ "$MAJOR" == true ] && [ "$(basename "$repo")" == "trytond-modules" ]; then
+
+            if [ "$NO_PUSH" == false ]; then
+                git push "$REMOTE" "coog-$TAG" >/dev/null
+            fi
+            git submodule update
+            git submodule foreach git checkout -b "coog-$TAG"
+            git submodule foreach git commit -m "Version created: coog-$TAG $(date)"
+            if [ "$NO_PUSH" == false ]; then
+                git submodule foreach git push "$REMOTE" "coog-$TAG" > /dev/null
+            fi
+        fi
+        if [ "$MAJOR" == false ]; then
+            commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/$version")"
+            echo "Creating tag coog-$TAG on $commit"
+            git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
+            if [ "$NO_PUSH" == false ]; then
+                git push "$REMOTE" "$TAG" >/dev/null
+            fi
+        fi
 }
 
 
@@ -57,28 +82,54 @@ _tag_clients() {
 update_version() {
     local repo; repo="$1"
     local version; local local_branch;
-    cd $repo || return 1
 
-    version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+    cd $repo || return 1
+    if [ "$MAJOR" == false ]; then
+        version=$(echo "coog-$TAG" | grep -Po '^(coog-\d+\.\d+)')
+    else
+        version='master'
+    fi
     if [ "$(basename "$repo")" == "coog" ]; then
-        git checkout "coog-$version" 
+        git checkout "$version" 
         git pull
         find . -name tryton.cfg -exec \
             sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$TAG/" {} +
+        [ "$MAJOR" == true ] && \
+            find . -name CHANGELOG | xargs -I {} sed -i "1iVersion $TAG - `date --iso`" {}  && \
+            sed -i "/version = /c\version = \'${TAG:0:4}\'" ./doc/user_manual/conf.py
+        git commit -am "packaging version $2"
         if [ "$NO_PUSH" == false ]; then
-            git commit -am "packaging version $2"
-            git push "$REMOTE" "coog-$version" >/dev/null
+            git push "$REMOTE" "$version" >/dev/null
+        fi
+        if [ "$MAJOR" == true ]; then
+            version=$(echo "coog-$TAG" | grep -Po '^(coog-\d+\.\d+)')
+            git checkout -b "$version"
+            if [ "$NO_PUSH" == false ]; then
+                git push "$REMOTE" "$version" >/dev/null
+            fi
+            git checkout master
+
+            version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+            version="${version:0:2}$(( ${version:2} + 1 ))"
+            find . -name tryton.cfg -exec \
+                sed -r -i "s/version=[0-9]+\.[0-9]+/version=$version\.0/" {} +
+            sed -i "/version = /c\version = \'$version\'" ./doc/user_manual/conf.py
+
+            git commit -am "tagging version $version"
+            if [ "$NO_PUSH" == false ]; then
+                git push "$REMOTE" "$version" >/dev/null
+            fi
         fi
     else
-        for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
-            local_branch=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+-coog-$version):\1:")
+        for branch in $(git branch -r | grep -Po "$REMOTE/\w+-$version"); do
+            local_branch=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+-$version):\1:")
             git checkout "$local_branch"
             git pull
             find . -name tryton.cfg -exec \
                 sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$TAG/" {} +
+            git commit -am "packaging version $2"
             if [ "$NO_PUSH" == false ]; then
-                git commit -am "packaging version $2"
-                git push "$REMOTE" "coog-$version" >/dev/null
+                git push "$REMOTE" "$version" >/dev/null
             fi
         done
     fi
@@ -103,26 +154,29 @@ main() {
 # Script begins here
 [ $# -lt 2 ] && echo "$USAGE" && exit 1
 
-while [[ $# -gt 1 ]]; do
+while [[ $# -gt 0 ]]; do
 
+    echo $@
     arg="$1"
-    value="$2"
     case $arg in
         -t|--tag)
-            TAG="$value"
+            TAG="$2"
             shift
             ;;
         -r|--remote)
-            REMOTE="$value"
+            REMOTE="$2"
             shift
             ;;
         -d|--date)
-            DATE="$value"
+            DATE="$2"
             shift
             ;;
         -p|--path)
-            WORKING_PATH="$value"
+            WORKING_PATH="$2"
             shift
+            ;;
+        -m|--major)
+            MAJOR=true
             ;;
         --nopush)
             NO_PUSH=true
@@ -139,6 +193,7 @@ done
 [ -z "$REMOTE" ] && REMOTE="origin"
 [ -z "$DATE" ] && DATE="$(date --iso)"
 [ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
+[ -z "$MAJOR" ] && MAJOR=false
 [ -z "$NO_PUSH" ] && NO_PUSH=false
 
 main
