@@ -16,137 +16,179 @@ Usage: ./version -t TAG [ OPTIONS ]
         Do not push tag to remote. Default is false.
 """
 
+fit() {
+    echo $@
+}
+
+_push () {
+    local to_push; to_push=$1;
+    if [ "$NO_PUSH" == false ]; then
+        fit push "$REMOTE" "$to_push" >/dev/null
+    fi
+}
 
 _tag_repository() {
     local repo; repo="$1"
     local version; local commit;
     cd "$repo" || return 1
 
-    if [ "$MAJOR" == false ]; then
-        version=$(echo "coog-$TAG" | grep -Po '^(coog-\d+\.\d+)')
-    else
-        version='master'
-    fi
+    version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
 
-    git fetch -p "$REMOTE" "$version" >/dev/null
-    if [ "$MAJOR" == true ]; then 
-        git checkout master
-        git pull
-        git checkout -b "coog-$TAG"
-    fi
-
-        if [ "$MAJOR" == true ] && [ "$(basename "$repo")" == "trytond-modules" ]; then
-
-            if [ "$NO_PUSH" == false ]; then
-                git push "$REMOTE" "coog-$TAG" >/dev/null
-            fi
-            git submodule update
-            git submodule foreach git checkout -b "coog-$TAG"
-            git submodule foreach git commit -m "Version created: coog-$TAG $(date)"
-            if [ "$NO_PUSH" == false ]; then
-                git submodule foreach git push "$REMOTE" "coog-$TAG" > /dev/null
-            fi
-        fi
-        if [ "$MAJOR" == false ]; then
-            commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/$version")"
-            echo "Creating tag coog-$TAG on $commit"
-            git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
-            if [ "$NO_PUSH" == false ]; then
-                git push "$REMOTE" "$TAG" >/dev/null
-            fi
-        fi
+    fit fetch -p "$REMOTE" "coog-$version" >/dev/null
+    commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/coog-$version")"
+    echo "Creating tag $TAG on $commit"
+    fit tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
+    _push "coog-$TAG"
 }
 
 
-_tag_clients() {
+_tag_customers() {
     local repo; repo="$1"
     local version; local commit; local client;
     cd "$repo" || return 1
 
-    git fetch -p "$REMOTE" >/dev/null
+    fit fetch -p "$REMOTE" >/dev/null
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
-        echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
+        echo "${branch//\// }" | xargs fit fetch -p 2>/dev/null
         commit=$(git rev-list -n 1 --before="$DATE" "$branch")
         client=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+)-coog-$version:\1:")
         echo "Applying tag $TAG to $branch"
-        git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date)" >/dev/null
-
-        if [ "$NO_PUSH" == false ]; then
-            git push "$REMOTE" "$client"-coog"-$TAG" >/dev/null
-        fi
+        fit tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date)" >/dev/null
+        _push "$client"-coog"-$TAG" 
     done
 }
 
 
+update_tryton_cfg() {
+    local full_version; full_version=$1
+    find . -name tryton.cfg -exec \
+        sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$full_version/" {} +
+}
+
+update_doc() {
+    local short_version; short_version=$1
+    sed -i "/version = /c\version = \'$short_version\'" ./doc/user_manual/conf.py
+}
+
+create_and_push_new_branch() {
+    local new_branch; new_branch=$1
+    fit checkout -b "$new_branch"
+    echo "Create new branch $new_branch"
+    _push $new_branch
+}
+
 update_version() {
     local repo; repo="$1"
+    local TAG; TAG="$2"
     local version; local local_branch;
 
+    echo "Updating version number for $repo to $TAG"
+
     cd $repo || return 1
+    echo "$repo"
+
     if [ "$MAJOR" == false ]; then
         version=$(echo "coog-$TAG" | grep -Po '^(coog-\d+\.\d+)')
     else
         version='master'
     fi
+
     if [ "$(basename "$repo")" == "coog" ]; then
-        git checkout "$version" 
-        git pull
-        find . -name tryton.cfg -exec \
-            sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$TAG/" {} +
-        [ "$MAJOR" == true ] && \
-            find . -name CHANGELOG | xargs -I {} sed -i "1iVersion $TAG - `date --iso`" {}  && \
-            sed -i "/version = /c\version = \'${TAG:0:4}\'" ./doc/user_manual/conf.py
-        git commit -am "packaging version $2"
-        if [ "$NO_PUSH" == false ]; then
-            git push "$REMOTE" "$version" >/dev/null
+        fit checkout "$version" 
+        fit pull
+
+        if [ "$MAJOR" == false ]; then
+            update_tryton_cfg $TAG
+            fit commit -am "packaging version $TAG"
+            _push $version
         fi
+
         if [ "$MAJOR" == true ]; then
-            version=$(echo "coog-$TAG" | grep -Po '^(coog-\d+\.\d+)')
-            git checkout -b "$version"
-            if [ "$NO_PUSH" == false ]; then
-                git push "$REMOTE" "$version" >/dev/null
-            fi
-            git checkout master
+            local full_version; full_version="coog-$TAG.0"
+            update_tryton_cfg "$TAG.0"
+            find . -name CHANGELOG | xargs -I {} sed -i "1iVersion $TAG - `date --iso`" {}
+            update_doc $TAG
+            fit commit -am "Prepare release $full_version"
+            fit tag -a "$full_version" -m "$full_version"
+            _push $full_version
+            create_and_push_new_branch "coog-$TAG"
 
-            version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
-            version="${version:0:2}$(( ${version:2} + 1 ))"
-            find . -name tryton.cfg -exec \
-                sed -r -i "s/version=[0-9]+\.[0-9]+/version=$version\.0/" {} +
-            sed -i "/version = /c\version = \'$version\'" ./doc/user_manual/conf.py
-
-            git commit -am "tagging version $version"
-            if [ "$NO_PUSH" == false ]; then
-                git push "$REMOTE" "$version" >/dev/null
-            fi
+            fit checkout master
+            local dev_version;
+            dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
+            update_tryton_cfg "$dev_version.0"
+            update_doc $dev_version
+            fit commit -am "Increase version number to $dev_version"
+            _push $version
         fi
-    else
+    elif [ "$(basename "$repo")" == "customers" ] && [ "$MAJOR" == false ]; then
         for branch in $(git branch -r | grep -Po "$REMOTE/\w+-$version"); do
             local_branch=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+-$version):\1:")
-            git checkout "$local_branch"
-            git pull
-            find . -name tryton.cfg -exec \
-                sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$TAG/" {} +
-            git commit -am "packaging version $2"
-            if [ "$NO_PUSH" == false ]; then
-                git push "$REMOTE" "$version" >/dev/null
-            fi
+            fit checkout "$local_branch"
+            fit pull
+            update_tryton_cfg $TAG
+            fit commit -am "packaging version $TAG"
+            _push $local_branch
         done
+    elif [ "$(basename "$repo")" == "customers" ] && [ "$MAJOR" == true ]; then
+        for customer in $CUSTOMERS; do
+            fit checkout $customer
+            fit pull
+            update_tryton_cfg "$TAG.0"
+            fit commit -am "Prepare release $TAG"
+
+            local new_customer_branch; new_customer_branch="$customer-coog-$TAG"
+            create_and_push_new_branch $new_customer_branch
+            _push $new_customer_branch
+            fit checkout $customer
+            dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
+            update_tryton_cfg "$dev_version.0"
+            fit commit -am "Increase version number to $dev_version"
+            _push $customer
+        done
+    elif [ "$(basename "$repo")" == "trytond-modules" ] && [ "$MAJOR" == true ]; then
+        fit checkout "$version" 
+        fit pull
+        fit submodule update
+
+        local new_branch="coog-$TAG"
+        create_and_push_new_branch $new_branch
+
+        fit submodule foreach fit checkout "$version"
+        fit submodule foreach fit pull
+        fit submodule foreach fit checkout -b $new_branch
+        if [ "$NO_PUSH" == false ]; then
+            fit submodule foreach fit push $new_branch
+        fi
+        fit commit -am "Set submodules branches to $new_branch"
+        local full_version; full_version="coog-$TAG.0"
+        fit tag -a "$full_version" -m "$full_version"
+        _push $new_branch
+        _push $full_version
+    elif [ "$MAJOR" == true ]; then
+        fit checkout "$version" 
+        fit pull
+        create_and_push_new_branch "coog-$TAG"
+        local full_version; full_version="coog-$TAG.0"
+        fit tag -a "$full_version" -m "$full_version"
+        _push $full_version
     fi
 }
 
 main() {
     for repo in $(find "$WORKING_PATH" -name .git -type d -prune | sed 's!\.git!!'); do
-        echo "Updating version number"
-        if [[ "$(basename "$repo")" == "coog" || "$(basename "$repo")" == "customers" ]]; then
-            (update_version $repo "$TAG")
-        fi
+        echo " "
+        echo " "
+        echo " "
+        update_version $repo "$TAG"
 
-        echo "Tagging repository $repo with $TAG"
-        if [ "$(basename "$repo")" == "customers" ]; then
-            (_tag_clients "$repo")
-        else
-            (_tag_repository "$repo")
+        if [ "$MAJOR" == false ]; then
+            if [ "$(basename "$repo")" == "customers" ]; then
+                (_tag_customers "$repo")
+            else
+                (_tag_repository "$repo")
+            fi
         fi
     done
 }
@@ -156,7 +198,6 @@ main() {
 
 while [[ $# -gt 0 ]]; do
 
-    echo $@
     arg="$1"
     case $arg in
         -t|--tag)
