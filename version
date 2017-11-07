@@ -59,7 +59,7 @@ _tag_customers() {
 update_tryton_cfg() {
     local full_version; full_version=$1
     find . -name tryton.cfg -exec \
-        sed -r -i "s/version=[0-9]+\.[0-9]+\.[0-9]+/version=$full_version/" {} +
+        sed -i "/version=/c\version=$full_version" {} +
 }
 
 update_doc() {
@@ -214,6 +214,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         -m|--major)
             MAJOR=true
+            [ -z "$CUSTOMERS" ] && echo "Please set the CUSTOMERS environment variable" \
+                "with the name of the development branch for each customer," \
+                "e.g. 'export CUSTOMERS=\"customer1 customer2 customer3\"'" && exit 1
             ;;
         --nopush)
             NO_PUSH=true
