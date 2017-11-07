@@ -19,7 +19,7 @@ Usage: ./version -t TAG [ OPTIONS ]
 _push () {
     local to_push; to_push=$1;
     if [ "$NO_PUSH" == false ]; then
-        git push "$REMOTE" "$to_push" >/dev/null
+        git push -u "$REMOTE" "$to_push" >/dev/null
     fi
 }
 
