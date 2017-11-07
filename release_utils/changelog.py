@@ -16,9 +16,9 @@ class ChangeLogIndex(object):
     def cmd(self, c):
         return check_output(c.split())
 
-    def __init__(self, path):
-        self.path = os.path.abspath(path)
-        conf_file = os.path.join(os.path.dirname(__file__), '../bl.conf')
+    def __init__(self, conf_file, repo_path):
+        self.path = os.path.abspath(repo_path)
+        conf_file = os.path.abspath(conf_file)
         with open(conf_file, 'r') as conf:
             self.conf = json.load(conf)
         self.changelogs = OrderedDict()
@@ -115,21 +115,24 @@ class ChangeLogIndex(object):
 
 def main():
     parser = argparse.ArgumentParser(
-            description="Extracts a list of changelog entries")
+        description="Extracts a list of changelog entries")
+    parser.add_argument('-c', '--config', dest="config_file", metavar='FILE',
+        default=os.environ.get("COOG_CI_CONF"),
+        help="Path to configuration file with redmine api credentials."
+        " You can set the env variable COOG_CI_CONF instead")
     parser.add_argument('repository',
-            help="Path to the repository")
+        help="Path to the repository")
     parser.add_argument('tracker', choices=["feature", "bug"],
-            help="The tracker of the entries we want to extract")
+        help="The tracker of the entries we want to extract")
     parser.add_argument('language',
-            help="The target language")
+        help="The target language")
     parser.add_argument('version', default="next",
-            help="The version we target for extraction. "
-            "For next release, use 'next'")
-    parser.add_argument('output',
-            help="The output file name")
+        help="The version we target for extraction."
+        " For next release, use 'next'")
+    parser.add_argument('output', help="The output file name")
     args = parser.parse_args()
 
-    index = ChangeLogIndex(args.repository)
+    index = ChangeLogIndex(args.config_file, args.repository)
     index.dump(args.tracker, args.language, args.version,
             args.output)
 
