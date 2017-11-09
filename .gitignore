@@ -1,5 +1,8 @@
 bl.conf
+issues.json
+push
 issues
 reports/
 repos.custom
+repos.common
 customers
