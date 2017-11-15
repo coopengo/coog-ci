@@ -71,7 +71,17 @@ _docker_images(){
     done 
 }
 
+_checkout_coog_admin(){
+    major_version=`expr substr $VERSION 1 4`
+
+    git \
+        --git-dir=/home/coog/coog-admin/.git \
+        --work-tree=/home/coog/coog-admin/ \
+        checkout "coog-$major_version"
+}
+
 main() {
+    _checkout_coog_admin
     calculate_customer_version
     _list_all_issues
     python issues_converter.py
