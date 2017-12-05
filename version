@@ -62,6 +62,12 @@ update_tryton_cfg() {
         sed -i "/version=/c\version=$full_version" {} +
 }
 
+update_client_version() {
+    local full_version; full_version=$1
+    find . -name __init__.py -exec \
+        sed -i "/__version_coog__ = /c\__version_coog__ = \"$full_version\"" {} +
+}
+
 update_doc() {
     local short_version; short_version=$1
     sed -i "/version = /c\version = \'$short_version\'" ./doc/user_manual/conf.py
@@ -162,6 +168,22 @@ update_version() {
         git tag -a "$full_version" -m "$full_version"
         _push $new_branch
         _push $full_version
+    elif [ "$(basename "$repo")" == "tryton" ] && [ "$MAJOR" == true ]; then
+        local full_version; full_version="coog-$TAG.0"
+        git checkout "$version"
+        git pull
+        update_client_version "$TAG"
+        git commit -am "Prepare release $full_version"
+        git tag -a "$full_version" -m "$full_version"
+        _push $full_version
+        create_and_push_new_branch "coog-$TAG"
+
+        git checkout master
+        local dev_version;
+        dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
+        update_client_version "$dev_version"
+        git commit -am "Increase version number to $dev_version"
+        _push $version
     elif [ "$MAJOR" == true ]; then
         git checkout "$version" 
         git pull
