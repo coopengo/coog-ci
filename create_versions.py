@@ -4,6 +4,7 @@
 import requests
 import sys
 import json
+import datetime
 
 conf_file = 'bl.conf'
 try:
@@ -42,7 +43,11 @@ def test_request(request):
         return
 
 
-def create_version(project_id, project_name, version):
+def create_version(project_id, project_name, version, customer_version):
+    if not customer_version:
+        sharing = 'tree'
+    else:
+        sharing = 'descendants'
     version = {
         'version': {
             'project': {
@@ -50,16 +55,17 @@ def create_version(project_id, project_name, version):
             },
             'name': project_name + '-' + version,
             'status': 'open',
-            'sharing': 'tree'
+            'sharing': sharing,
+            'due_date': datetime.date.today().isoformat(),
         }
     }
     return version
 
 
-def post_version(version, project_id, project_name):
+def post_version(version, project_id, project_name, customer_version):
     post_url = REDMINE_URL + '/projects/%s/versions.json' % str(project_id)
     parameters_json = json.dumps(
-        create_version(project_id, project_name, version))
+        create_version(project_id, project_name, version, customer_version))
 
     request = requests.post(post_url, auth=(API_KEY, ''), data=parameters_json,
         headers=HEADERS)
@@ -87,6 +93,14 @@ def link_issue_to_version(issue_id, project_name):
     test_request(request)
 
 
+def close_versions():
+    close_data = {'version': {'status': 'closed'}}
+    close_data = json.dumps(close_data)
+    for project_name, version_id in VERSION_CREATED_ID:
+        requests.put(REDMINE_URL + '/versions/%s.json' % version_id,
+            auth=(API_KEY, ''), data=close_data, headers=HEADERS)
+
+
 def main():
     try:
         _, version = sys.argv
@@ -99,9 +113,9 @@ def main():
     ''')
         return 1
 
-    post_version(version, 91, 'coog')
+    post_version(version, 91, 'coog', False)
     for c_name, c_id in CUSTOMERS_PROJECT_ID.iteritems():
-        post_version(version, c_id, c_name)
+        post_version(version, c_id, c_name, True)
 
     print VERSION_CREATED_ID
 
@@ -116,6 +130,7 @@ def main():
                 print 'issue: ', issue
                 link_issue_to_version(issue, project)
 
+    close_versions(VERSION_CREATED_ID)
 
 if __name__ == '__main__':
     main()
