@@ -8,8 +8,6 @@ Usage: ./version -t TAG [ OPTIONS ]
         The path in which to search for repos. Default is $PWD.
     -r --remote
         The remote on which to work in git. Default is origin.
-    -d --date
-        Search for last commit before date. Default is today.
     -m --major
         Indicate if this is a new major version, need -t with major version number.
     --nopush
@@ -31,9 +29,9 @@ _tag_repository() {
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
 
     git fetch -p "$REMOTE" "coog-$version" >/dev/null
-    commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/coog-$version")"
+    commit="$(git rev-list -n 1 "$REMOTE/coog-$version")"
     echo "Creating tag $TAG on $commit"
-    git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
+    git tag -a "coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
     _push "coog-$TAG"
 }
 
@@ -47,10 +45,10 @@ _tag_customers() {
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
         echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
-        commit=$(git rev-list -n 1 --before="$DATE" "$branch")
+        commit=$(git rev-list -n 1 "$branch")
         client=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+)-coog-$version:\1:")
         echo "Applying tag $TAG to $branch"
-        git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date)" >/dev/null
+        git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
         _push "$client"-coog"-$TAG" 
     done
 }
@@ -226,10 +224,6 @@ while [[ $# -gt 0 ]]; do
             REMOTE="$2"
             shift
             ;;
-        -d|--date)
-            DATE="$2"
-            shift
-            ;;
         -p|--path)
             WORKING_PATH="$2"
             shift
@@ -253,7 +247,6 @@ done
 
 [ -z "$TAG" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$REMOTE" ] && REMOTE="origin"
-[ -z "$DATE" ] && DATE="$(date --iso)"
 [ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
 [ -z "$MAJOR" ] && MAJOR=false
 [ -z "$NO_PUSH" ] && NO_PUSH=false
