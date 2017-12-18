@@ -1,1 +1,4 @@
+* Add due_date in version creation in redmine
+* Change sharing mode for customer project in redmine
+* Close redmine version 
 * Remove date option in version script as it's deprecated since a commit update file version information
