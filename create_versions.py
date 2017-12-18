@@ -44,7 +44,7 @@ def test_request(request):
 
 
 def create_version(project_id, project_name, version, customer_version):
-    if customer_version:
+    if not customer_version:
         sharing = 'tree'
     else:
         sharing = 'descendants'
