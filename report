@@ -75,8 +75,8 @@ _checkout_coog_admin(){
     major_version=`expr substr $VERSION 1 4`
 
     git \
-        --git-dir=/home/coog/coog-admin/.git \
-        --work-tree=/home/coog/coog-admin/ \
+        --git-dir=$WORKING_PATH/coog-admin/.git \
+        --work-tree=$WORKING_PATH/coog-admin/ \
         checkout "coog-$major_version"
 }
 

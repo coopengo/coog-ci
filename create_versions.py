@@ -130,7 +130,7 @@ def main():
                 print 'issue: ', issue
                 link_issue_to_version(issue, project)
 
-    close_versions(VERSION_CREATED_ID)
+    close_versions()
 
 if __name__ == '__main__':
     main()
