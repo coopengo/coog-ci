@@ -13,14 +13,27 @@ Usage: ./create_docker_image -c CUSTOMER -v VERSION
 PATH_TO_COOG_ADMIN='/home/coog/workspace/coog-admin/'
 
 _generate() {
-    $PATH_TO_COOG_ADMIN/build coopengo/coog-$1:$2 \
-        customers:$1-coog-$2 \
-        coog:coog-$2 \
-        trytond:coog-$2 \
-        trytond-modules:coog-$2 \
-        coog-bench:coog-$2 \
-        sao:coog-$2
-}
+    case $1 in
+        1.12)
+            $PATH_TO_COOG_ADMIN/build coopengo/coog-$1:$2 \
+                customers:$1-coog-$2 \
+                coog:coog-$2 \
+                trytond:coog-$2 \
+                trytond-modules:coog-$2 \
+                coog-bench:coog-$2 \
+                sao:coog-$2
+            ;;
+        *)
+            $PATH_TO_COOG_ADMIN/coog build coopengo/coog-$1:$2 \
+                customers:$1-coog-$2 \
+                coog:coog-$2 \
+                trytond:coog-$2 \
+                trytond-modules:coog-$2 \
+                coog-bench:coog-$2 \
+                sao:coog-$2
+            ;;
+        esac
+        }
 
 main(){
     _generate $CUSTOMER $VERSION
