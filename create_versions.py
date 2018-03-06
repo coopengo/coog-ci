@@ -81,9 +81,21 @@ def read_issues():
 
 def link_issue_to_version(issue_id, project_name):
     put_url = REDMINE_URL + '/issues/%s.json' % str(issue_id)
+    get_request = requests.get(put_url, auth=(API_KEY, ''), headers=HEADERS)
+    test_request(get_request)
+    field = []
+    for fields in (get_request.json())['custom_fields']:
+        if fields.id == 37:
+            field.extend(fields.value)
+    field.append(VERSION_CREATED_ID[project_name])
     linked_version = {
         'issue': {
-            'fixed_version_id': VERSION_CREATED_ID[project_name]
+            'custom_fields': [
+                {
+                    'value': field,
+                    'id': 37
+                }
+            ]
         }
     }
     parameters_json = json.dumps(linked_version)
