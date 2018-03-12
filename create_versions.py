@@ -96,7 +96,7 @@ def link_issue_to_version(issue_id, project_name):
 def close_versions():
     close_data = {'version': {'status': 'closed'}}
     close_data = json.dumps(close_data)
-    for project_name, version_id in VERSION_CREATED_ID:
+    for project_name, version_id in VERSION_CREATED_ID.iteritems():
         requests.put(REDMINE_URL + '/versions/%s.json' % version_id,
             auth=(API_KEY, ''), data=close_data, headers=HEADERS)
 
