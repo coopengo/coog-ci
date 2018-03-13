@@ -85,6 +85,9 @@ def link_issue_to_version(issue_id, project_name):
     put_url = REDMINE_URL + '/issues/%s.json' % str(issue_id)
     get_request = requests.get(put_url, auth=(API_KEY, ''), headers=HEADERS)
     if(get_request.status_code not in [200, 201]):
+        print 'Unprocessable Entity: Error %s \n' % str(get_request.status_code)\
+            + 'issue %s was not load due to errors' % str(issue_id) \
+            + '\n' + get_request.text
         return
     field = [VERSION_CREATED_ID[project_name]]
     for fields in (get_request.json())['issue']['custom_fields']:
@@ -95,7 +98,7 @@ def link_issue_to_version(issue_id, project_name):
             'custom_fields': [
                 {
                     'value': field,
-                    'id': 37
+                    'id': 37 #Champ : version de correction
                 }
             ]
         }
