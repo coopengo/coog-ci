@@ -13,8 +13,8 @@ Usage: ./create_docker_image -c CUSTOMER -v VERSION
 PATH_TO_COOG_ADMIN='/home/coog/workspace/coog-admin/'
 
 _generate() {
-    case $1 in
-        1.12)
+    case $2 in
+        1.12*)
             $PATH_TO_COOG_ADMIN/build coopengo/coog-$1:$2 \
                 customers:$1-coog-$2 \
                 coog:coog-$2 \
