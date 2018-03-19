@@ -35,6 +35,8 @@ def test_request(request):
             version_id = (request.json())['version']['id']
         except ValueError:
             pass
+        except KeyError:
+            pass
         return version_id
     else:
         print 'Unprocessable Entity: Error %s \n' % str(request.status_code)\
@@ -81,9 +83,24 @@ def read_issues():
 
 def link_issue_to_version(issue_id, project_name):
     put_url = REDMINE_URL + '/issues/%s.json' % str(issue_id)
+    get_request = requests.get(put_url, auth=(API_KEY, ''), headers=HEADERS)
+    if(get_request.status_code not in [200, 201]):
+        print 'Unprocessable Entity: Error %s \n' % str(get_request.status_code)\
+            + 'issue %s was not load due to errors' % str(issue_id) \
+            + '\n' + get_request.text
+        return
+    field = [VERSION_CREATED_ID[project_name]]
+    for fields in (get_request.json())['issue']['custom_fields']:
+        if fields['id'] == 37:
+            field.extend(fields['value'])
     linked_version = {
         'issue': {
-            'fixed_version_id': VERSION_CREATED_ID[project_name]
+            'custom_fields': [
+                {
+                    'value': field,
+                    'id': 37 #Champ : version de correction
+                }
+            ]
         }
     }
     parameters_json = json.dumps(linked_version)
@@ -116,8 +133,6 @@ def main():
     post_version(version, 91, 'coog', False)
     for c_name, c_id in CUSTOMERS_PROJECT_ID.iteritems():
         post_version(version, c_id, c_name, True)
-
-    print VERSION_CREATED_ID
 
     issues = read_issues()
     for project in issues.keys():
