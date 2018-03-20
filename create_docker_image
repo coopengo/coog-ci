@@ -8,31 +8,19 @@ Usage: ./create_docker_image -c CUSTOMER -v VERSION
         The customer you release version for.
     -v --version
         The tag version you release.
+    -a --admin
+        The path to coog-admin folder
 """
 
-PATH_TO_COOG_ADMIN='/home/coog/workspace/coog-admin/'
-
 _generate() {
-    case $2 in
-        1.12*)
-            $PATH_TO_COOG_ADMIN/build coopengo/coog-$1:$2 \
-                customers:$1-coog-$2 \
-                coog:coog-$2 \
-                trytond:coog-$2 \
-                trytond-modules:coog-$2 \
-                coog-bench:coog-$2 \
-                sao:coog-$2
-            ;;
-        *)
-            $PATH_TO_COOG_ADMIN/coog build coopengo/coog-$1:$2 \
-                customers:$1-coog-$2 \
-                coog:coog-$2 \
-                trytond:coog-$2 \
-                trytond-modules:coog-$2 \
-                coog-bench:coog-$2 \
-                sao:coog-$2
-            ;;
-        esac
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN $PATH_TO_COOG_ADMIN/coog \
+            build coopengo/coog-$1:$2 \
+            customers:$1-coog-$2 \
+            coog:coog-$2 \
+            trytond:coog-$2 \
+            trytond-modules:coog-$2 \
+            coog-bench:coog-$2 \
+            sao:coog-$2
         }
 
 main(){
@@ -56,6 +44,10 @@ while [[ $# -gt 1 ]]; do
             VERSION="$value"
             shift
             ;;
+        -a|--admin)
+            PATH_TO_COOG_ADMIN="$value"
+            shift
+            ;;
         *)
             echo "Invalid argument $arg."
             return 1
@@ -66,5 +58,6 @@ done
 
 [ -z "$CUSTOMER" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
+[ -z "$PATH_TO_COOG_ADMIN" ] && echo "Missing required parameter.$USAGE" && exit 1
 
 main "$@"
