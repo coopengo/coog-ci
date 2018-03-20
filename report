@@ -8,6 +8,8 @@ Usage: ./report -v VERSION -o OLD_VERSION [ OPTIONS ]
         The old released version you want to see diff.
     -p --path
         The path in which to search for git tag. Default is $PWD.
+    -a --admin
+        The path to coog-admin Default is $PWD/../coog-admin.
 """
 
 IFS=$'\n'
@@ -67,7 +69,7 @@ _list_all_issues() {
 
 _docker_images(){
     for customer in ${customers_in_version[@]}; do
-        ./create_docker_image -c "$customer" -v "$VERSION"
+        ./create_docker_image -c "$customer" -v "$VERSION" -a "$COOG_ADMIN_PATH"
     done 
 }
 
@@ -75,8 +77,8 @@ _checkout_coog_admin(){
     major_version=`expr substr $VERSION 1 4`
 
     git \
-        --git-dir=$WORKING_PATH/coog-admin/.git \
-        --work-tree=$WORKING_PATH/coog-admin/ \
+        --git-dir=$COOG_ADMIN_PATH/.git \
+        --work-tree=$COOG_ADMIN_PATH/ \
         checkout "coog-$major_version"
 }
 
@@ -111,6 +113,10 @@ while [[ $# -gt 1 ]]; do
             OLD_VERSION="$value"
             shift
             ;;
+        -a|--admin)
+            COOG_ADMIN_PATH="$value"
+            shift
+            ;;
         *)
             echo "Invalid argument $arg."
             return 1
@@ -122,5 +128,6 @@ done
 [ -z "$VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$OLD_VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
+[ -z "$COOG_ADMIN_PATH" ] && COOG_ADMIN_PATH=`readlink -f $PWD/../coog-admin`
 
 main "$@"
