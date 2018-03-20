@@ -4,6 +4,7 @@
 import requests
 import sys
 import json
+import datetime
 
 conf_file = 'bl.conf'
 try:
@@ -34,6 +35,8 @@ def test_request(request):
             version_id = (request.json())['version']['id']
         except ValueError:
             pass
+        except KeyError:
+            pass
         return version_id
     else:
         print 'Unprocessable Entity: Error %s \n' % str(request.status_code)\
@@ -42,7 +45,11 @@ def test_request(request):
         return
 
 
-def create_version(project_id, project_name, version):
+def create_version(project_id, project_name, version, customer_version):
+    if not customer_version:
+        sharing = 'tree'
+    else:
+        sharing = 'descendants'
     version = {
         'version': {
             'project': {
@@ -50,16 +57,17 @@ def create_version(project_id, project_name, version):
             },
             'name': project_name + '-' + version,
             'status': 'open',
-            'sharing': 'tree'
+            'sharing': sharing,
+            'due_date': datetime.date.today().isoformat(),
         }
     }
     return version
 
 
-def post_version(version, project_id, project_name):
+def post_version(version, project_id, project_name, customer_version):
     post_url = REDMINE_URL + '/projects/%s/versions.json' % str(project_id)
     parameters_json = json.dumps(
-        create_version(project_id, project_name, version))
+        create_version(project_id, project_name, version, customer_version))
 
     request = requests.post(post_url, auth=(API_KEY, ''), data=parameters_json,
         headers=HEADERS)
@@ -75,9 +83,24 @@ def read_issues():
 
 def link_issue_to_version(issue_id, project_name):
     put_url = REDMINE_URL + '/issues/%s.json' % str(issue_id)
+    get_request = requests.get(put_url, auth=(API_KEY, ''), headers=HEADERS)
+    if(get_request.status_code not in [200, 201]):
+        print 'Unprocessable Entity: Error %s \n' % str(get_request.status_code)\
+            + 'issue %s was not load due to errors' % str(issue_id) \
+            + '\n' + get_request.text
+        return
+    field = [VERSION_CREATED_ID[project_name]]
+    for fields in (get_request.json())['issue']['custom_fields']:
+        if fields['id'] == 37:
+            field.extend(fields['value'])
     linked_version = {
         'issue': {
-            'fixed_version_id': VERSION_CREATED_ID[project_name]
+            'custom_fields': [
+                {
+                    'value': field,
+                    'id': 37 #Champ : version de correction
+                }
+            ]
         }
     }
     parameters_json = json.dumps(linked_version)
@@ -85,6 +108,14 @@ def link_issue_to_version(issue_id, project_name):
         headers=HEADERS)
     print 'linking issue %s to project %s' % (issue_id, project_name)
     test_request(request)
+
+
+def close_versions():
+    close_data = {'version': {'status': 'closed'}}
+    close_data = json.dumps(close_data)
+    for project_name, version_id in VERSION_CREATED_ID.iteritems():
+        requests.put(REDMINE_URL + '/versions/%s.json' % version_id,
+            auth=(API_KEY, ''), data=close_data, headers=HEADERS)
 
 
 def main():
@@ -99,11 +130,9 @@ def main():
     ''')
         return 1
 
-    post_version(version, 91, 'coog')
+    post_version(version, 91, 'coog', False)
     for c_name, c_id in CUSTOMERS_PROJECT_ID.iteritems():
-        post_version(version, c_id, c_name)
-
-    print VERSION_CREATED_ID
+        post_version(version, c_id, c_name, True)
 
     issues = read_issues()
     for project in issues.keys():
@@ -116,6 +145,7 @@ def main():
                 print 'issue: ', issue
                 link_issue_to_version(issue, project)
 
+    close_versions()
 
 if __name__ == '__main__':
     main()

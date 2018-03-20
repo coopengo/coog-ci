@@ -8,8 +8,6 @@ Usage: ./version -t TAG [ OPTIONS ]
         The path in which to search for repos. Default is $PWD.
     -r --remote
         The remote on which to work in git. Default is origin.
-    -d --date
-        Search for last commit before date. Default is today.
     -m --major
         Indicate if this is a new major version, need -t with major version number.
     --nopush
@@ -31,9 +29,9 @@ _tag_repository() {
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
 
     git fetch -p "$REMOTE" "coog-$version" >/dev/null
-    commit="$(git rev-list -n 1 --before="$DATE" "$REMOTE/coog-$version")"
+    commit="$(git rev-list -n 1 "$REMOTE/coog-$version")"
     echo "Creating tag $TAG on $commit"
-    git tag -a "coog-$TAG" "$commit" -m "Version created: $(date)"
+    git tag -a "coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
     _push "coog-$TAG"
 }
 
@@ -47,10 +45,10 @@ _tag_customers() {
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
         echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
-        commit=$(git rev-list -n 1 --before="$DATE" "$branch")
+        commit=$(git rev-list -n 1 "$branch")
         client=$(echo "$branch" | sed -E "s:$REMOTE\/(\w+)-coog-$version:\1:")
         echo "Applying tag $TAG to $branch"
-        git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date)" >/dev/null
+        git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
         _push "$client"-coog"-$TAG" 
     done
 }
@@ -60,6 +58,12 @@ update_tryton_cfg() {
     local full_version; full_version=$1
     find . -name tryton.cfg -exec \
         sed -i "/version=/c\version=$full_version" {} +
+}
+
+update_client_version() {
+    local full_version; full_version=$1
+    find . -name __init__.py -exec \
+        sed -i "/__version_coog__ = /c\__version_coog__ = \"$full_version\"" {} +
 }
 
 update_doc() {
@@ -162,6 +166,22 @@ update_version() {
         git tag -a "$full_version" -m "$full_version"
         _push $new_branch
         _push $full_version
+    elif [ "$(basename "$repo")" == "tryton" ] && [ "$MAJOR" == true ]; then
+        local full_version; full_version="coog-$TAG.0"
+        git checkout "$version"
+        git pull
+        update_client_version "$TAG"
+        git commit -am "Prepare release $full_version"
+        git tag -a "$full_version" -m "$full_version"
+        _push $full_version
+        create_and_push_new_branch "coog-$TAG"
+
+        git checkout master
+        local dev_version;
+        dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
+        update_client_version "$dev_version"
+        git commit -am "Increase version number to $dev_version"
+        _push $version
     elif [ "$MAJOR" == true ]; then
         git checkout "$version" 
         git pull
@@ -204,10 +224,6 @@ while [[ $# -gt 0 ]]; do
             REMOTE="$2"
             shift
             ;;
-        -d|--date)
-            DATE="$2"
-            shift
-            ;;
         -p|--path)
             WORKING_PATH="$2"
             shift
@@ -231,7 +247,6 @@ done
 
 [ -z "$TAG" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$REMOTE" ] && REMOTE="origin"
-[ -z "$DATE" ] && DATE="$(date --iso)"
 [ -z "$WORKING_PATH" ] && WORKING_PATH="$PWD"
 [ -z "$MAJOR" ] && MAJOR=false
 [ -z "$NO_PUSH" ] && NO_PUSH=false

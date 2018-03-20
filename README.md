@@ -14,10 +14,9 @@ cd coog-ci
 ```
 - run
 ```
-./version -t <tag> -p /home/coog/workspace -d <last_success_test_passing_date>
+./version -t <tag> -p /home/coog/workspace
 ./report -v <version> -o <version_you_want_to_diff_with> -p /home/coog/workspace
 ```
-**Warning** : The version will include all commits **strictly <** to the given date, so if you want to include today's commits, you should give the day after (tomorrow)
 
 These commands should :
 - update in-app version

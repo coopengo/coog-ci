@@ -1,0 +1,6 @@
+* Add correction version update instead of current version
+* Use working path instaed of predefined path for coog-admin folder
+* Add due_date in version creation in redmine
+* Change sharing mode for customer project in redmine
+* Close redmine version 
+* Remove date option in version script as it's deprecated since a commit update file version information
