@@ -65,7 +65,7 @@ def sort_before_report(project, issues):
         issue_triggered_by_customer = False
         if project.upper() not in str(issue['project']).upper() and relations:
             for relation in relations:
-                if relation.upper() in str(issue['project']).upper():
+                if str(relation).upper() in str(issue['project']).upper():
                     issue_triggered_by_customer = True
         else:
             issue_triggered_by_customer = True
