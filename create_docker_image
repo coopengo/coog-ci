@@ -3,17 +3,21 @@
 USAGE="""
 This script assumes a docker registry is running on your server.
 
-Usage: ./create_docker_image -c CUSTOMER -v VERSION
+Usage: ./create_docker_image -c CUSTOMER -v VERSION -a COOG ADMIN PATH -i IMAGE TYPE
     -c --customer
         The customer you release version for.
     -v --version
         The tag version you release.
     -a --admin
         The path to coog-admin folder
+    -i --image
+        Image type 'coog' or 'web'
 """
 
-_generate() {
-        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN $PATH_TO_COOG_ADMIN/coog \
+_generate_customer_image() {
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
+        COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
+            $PATH_TO_COOG_ADMIN/coog \
             build coopengo/coog-$1:$2 \
             customers:$1-coog-$2 \
             coog:coog-$2 \
@@ -21,12 +25,57 @@ _generate() {
             trytond-modules:coog-$2 \
             coog-bench:coog-$2 \
             sao:coog-$2
+        docker push "coopengo/coog-$1:$2"
+        }
+
+_generate_coog_image() {
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
+        COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
+            $PATH_TO_COOG_ADMIN/coog \
+            build coopengo/coog:$1 \
+            coog:coog-$1 \
+            trytond:coog-$1 \
+            trytond-modules:coog-$1 \
+            coog-bench:coog-$1 \
+            sao:coog-$1
+        docker push "coopengo/coog:$VERSION"
+        }
+
+_generate_web_image() {
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
+        COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
+            $PATH_TO_COOG_ADMIN/web \
+            build coopengo/web:$1 \
+            coog-api:coog-$1 \
+            coog-app:coog-$1
+        docker push "coopengo/web:$1"
+        }
+
+_generate_customer_web_image() {
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
+        COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
+            $PATH_TO_COOG_ADMIN/web \
+            build coopengo/web-$1:$2 \
+            coog-api:coog-$2 \
+            coog-app:coog-$2
+        docker push "coopengo/web-$1:$2"
         }
 
 main(){
-    _generate $CUSTOMER $VERSION
-    docker push "coopengo/coog-$CUSTOMER:$VERSION"
-}
+    if [ "$IMAGE" == "web" ]; then
+        if [ "$CUSTOMER" == "coog" ]; then
+            _generate_web_image $VERSION
+        else
+            _generate_customer_web_image $CUSTOMER $VERSION
+        fi
+    elif [ "$IMAGE" == "coog" ]; then
+        if [ "$CUSTOMER" == "coog" ]; then
+            _generate_coog_image $VERSION
+        else
+            _generate_customer_image $CUSTOMER $VERSION
+        fi
+    fi
+    }
 
 # Script begins here
 [ $# -lt 2 ] && echo "$USAGE" && exit 1
@@ -48,6 +97,10 @@ while [[ $# -gt 1 ]]; do
             PATH_TO_COOG_ADMIN="$value"
             shift
             ;;
+        -i|--image)
+            IMAGE="$value"
+            shift
+            ;;
         *)
             echo "Invalid argument $arg."
             return 1
@@ -59,5 +112,6 @@ done
 [ -z "$CUSTOMER" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$VERSION" ] && echo "Missing required parameter.$USAGE" && exit 1
 [ -z "$PATH_TO_COOG_ADMIN" ] && echo "Missing required parameter.$USAGE" && exit 1
+[ -z "$IMAGE" ] && echo "Missing required parameter.$USAGE" && exit 1
 
 main "$@"

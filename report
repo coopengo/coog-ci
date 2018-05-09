@@ -17,12 +17,12 @@ IFS=$'\n'
 customers_in_version=()
 
 calculate_customer_version(){
-    major_version=`expr substr $VERSION 1 4`
+    major_version=`cut -d '.' -f 1,2 <<< $VERSION`
 
     for customer in $(cat ./customers); do
-        customer_version="${customer:(-4)}"
+        customer_version=`cut -d ':' -f 2 <<< $customer`
         if [[ $customer_version == *"$major_version"* ]]; then
-            name=${customer::-5}
+            name=`cut -d ':' -f 1 <<< $customer`
             customers_in_version+=($name)
         fi
     done
@@ -68,13 +68,18 @@ _list_all_issues() {
 }
 
 _docker_images(){
+    # generate coog vanilla image
+    ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "coog"
+    # generate customer coog image
     for customer in ${customers_in_version[@]}; do
-        ./create_docker_image -c "$customer" -v "$VERSION" -a "$COOG_ADMIN_PATH"
-    done 
+        ./create_docker_image -c "$customer" -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "coog"
+    done
+    # create coog web vanilla image
+    ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "web"
 }
 
 _checkout_coog_admin(){
-    major_version=`expr substr $VERSION 1 4`
+    major_version=`cut -d '.' -f 1,2 <<< $VERSION`
 
     git \
         --git-dir=$COOG_ADMIN_PATH/.git \
