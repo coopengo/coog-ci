@@ -76,6 +76,8 @@ _docker_images(){
     done
     # create coog web vanilla image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "web"
+    # create unoconv image
+    ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "unoconv"
 }
 
 _checkout_coog_admin(){
