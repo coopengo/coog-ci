@@ -51,6 +51,14 @@ _generate_web_image() {
         docker push "coopengo/web:$1"
         }
 
+_generate_unoconv_image() {
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
+        COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
+            $PATH_TO_COOG_ADMIN/unoconv \
+            build coopengo/unoconv:$1
+        docker push "coopengo/unoconv:$1"
+        }
+
 _generate_customer_web_image() {
         COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
         COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
@@ -73,6 +81,10 @@ main(){
             _generate_coog_image $VERSION
         else
             _generate_customer_image $CUSTOMER $VERSION
+        fi
+    elif [ "$IMAGE" == "unoconv" ]; then
+        if [ "$CUSTOMER" == "coog" ]; then
+            _generate_unoconv_image $VERSION
         fi
     fi
     }
