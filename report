@@ -87,6 +87,14 @@ _checkout_coog_admin(){
         checkout "coog-$major_version"
 }
 
+_remove_bench_tmp_files(){
+    # this is required because in 2.0 it's using a coog user in the bench 
+    # build docker file.
+    if [ -d "/tmp/coog-bench" ]; then
+        sudo rm -rf /tmp/coog-bench
+    fi
+}
+
 main() {
     _checkout_coog_admin
     calculate_customer_version
@@ -95,6 +103,7 @@ main() {
     python create_versions.py $VERSION
     python bl_support.py $VERSION
     python html_to_pdf.py
+    _remove_bench_tmp_files
     _docker_images
 }
 
