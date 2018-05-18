@@ -1,3 +1,4 @@
+* Fix issue when integrating 2.0 after 1.14: bench folder owner is not the same
 * Add correction version update instead of current version
 * Use working path instaed of predefined path for coog-admin folder
 * Add due_date in version creation in redmine
