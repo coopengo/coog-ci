@@ -38,7 +38,8 @@ _list_common_issues() {
         rev-list --format=%B \
         "coog-$VERSION" \
         ^"coog-$OLD_VERSION" | \
-        grep -E "Fix #" | \
+        grep -E "^Fix # *[0-9]* *$" | \
+        grep -v "#0000" | \
         sed -e "s/.*Fix *# *\([0-9]\+\).*/\1/"
 }
 
@@ -48,7 +49,8 @@ _list_customer_issues() {
         rev-list --format=%B \
         "$2-coog-$VERSION" \
         ^"$2-coog-$OLD_VERSION" | \
-        grep -E "Fix #" | \
+        grep -E "^Fix # *[0-9]* *$" | \
+        grep -v "#0000" | \
         sed -e "s/.*Fix *# *\([0-9]\+\).*/\1/"
 }
 

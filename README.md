@@ -18,6 +18,8 @@ cd coog-ci
 ./report -v <version> -o <version_you_want_to_diff_with> -p /home/coog/workspace
 ```
 
+`-t`, `-v`, `-o` values should be in the form `X.X.X` rather than `coog-X.X.X`
+
 These commands should :
 - update in-app version
 - create tags in all coog repositories

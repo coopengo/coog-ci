@@ -52,8 +52,8 @@ def sort_before_report(project, issues):
             for r in issue['relations']:
                 relations.append(r['issue_id'])
                 relations.append(r['issue_to_id'])
-        issue['custom_fields'] = {x['id']:
-                x.get('value', '')
+        issue['custom_fields'] = {
+                x['id']: x.get('value', '')
                 for x in issue.get('custom_fields', {})
                 if not x.get('multiple', False)}
         if issue['project']['id'] not in COMMON_PROJECTS_ID and \
@@ -133,7 +133,8 @@ def main():
                 delivery_notes['coog']['params']
             delivery_notes[project]['scripts'] += \
                 delivery_notes['coog']['scripts']
-        report_html(filename, version_name,
+        report_html(
+                filename, version_name,
                 delivery_notes[project]['features'],
                 delivery_notes[project]['bugs'],
                 delivery_notes[project]['params'],
@@ -160,8 +161,8 @@ def get_related_issues(issue):
     return []
 
 
-def report_html(filename, version_name, features, bugs, params, scripts,
-        opened):
+def report_html(
+        filename, version_name, features, bugs, params, scripts, opened):
     with open('reports/' + filename, 'w') as file:
         content = """
         <html>
@@ -222,7 +223,8 @@ def report_html(filename, version_name, features, bugs, params, scripts,
                 '<th>Fiches liées</th></tr>\n'
 
             for issue in opened:
-                content += ('            <tr><td>' +
+                content += (
+                    '            <tr><td>' +
                     '</td><td>'.join([get_issue_id(
                         issue['id']),
                         issue['priority']['name'],
@@ -245,7 +247,8 @@ def report_html(filename, version_name, features, bugs, params, scripts,
                 if not issues:
                     continue
                 for issue in issues:
-                    content += ('            <tr><td>' +
+                    content += (
+                        '            <tr><td>' +
                         '</td><td>'.join([get_issue_id(
                             issue['id']),
                             issue['priority']['name'],
@@ -270,7 +273,8 @@ def report_html(filename, version_name, features, bugs, params, scripts,
                 if not issues:
                     continue
                 for issue in issues:
-                    content += ('            <tr><td>' +
+                    content += (
+                        '            <tr><td>' +
                         '</td><td>'.join([get_issue_id(
                             issue['id']),
                             issue['priority']['name'],
@@ -290,7 +294,8 @@ def report_html(filename, version_name, features, bugs, params, scripts,
                 '<tr><th>#</th><th>Sujet</th><th width="200">Param</th>' + \
                 '<th>Fiches liées</th></tr>\n'
             for issue in params:
-                content += ('            <tr><td>' +
+                content += (
+                    '            <tr><td>' +
                     get_issue_id(issue['id']) + '</td><td>' +
                     issue['subject'] + '</td><td>' +
                     issue['custom_fields'][7] + '</td><td>' +
@@ -306,7 +311,8 @@ def report_html(filename, version_name, features, bugs, params, scripts,
                 '<tr><th>#</th><th>Subject</th><th width="200">Script' + \
                 '</th><th>Fiches liées</th></tr>\n'
             for issue in scripts:
-                content += ('            <tr><td>' +
+                content += (
+                    '            <tr><td>' +
                     get_issue_id(issue['id']) + '</td><td>' +
                     issue['subject'] + '</td><td>' +
                     issue['custom_fields'][9] + '</td><td>' +

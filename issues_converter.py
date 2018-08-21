@@ -26,4 +26,4 @@ if projects:
         with open('issues', 'w') as i:
             i.write('')
 else:
-    print 'No issue to convert'
+    print('No issue to convert')
