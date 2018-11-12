@@ -10,7 +10,7 @@ ssh coog@ci.coopengo.com
 ```
 - go to coog-ci
 ```
-cd coog-ci
+cd coog-[version]/coog-ci
 ```
 - run
 ```
