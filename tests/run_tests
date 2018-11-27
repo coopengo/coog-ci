@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# This script allows to run the full coog test suite for versions >= 2.0,
+# starting with an empty debian based server (with docker already installed)
+#
+# It expects a:
+#   - A "ssh" folder containing the id_rsa / id_rsa.pub files to use for
+#   connecting to github
+#   - A "secret" folder which must export the MAIL_USER and MAIL_PASSWORD
+#   environment variables. Those are necessary to effectively send the test
+#   report by email
+#
+# The script requires one parameter, which is the branch that will be tested
+
+export COOG_CODE_DIR=/tmp/coog-admin
+export COOG_DATA_DIR=/tmp/coog-data
+export TEST=1
+export CACHE_DB=x
+
+BRANCH=$1
+
+apt install -y moreutils > /dev/null
+
+echo 'Setting up SSH'
+chmod 700 ~/ssh
+chmod 600 ~/ssh/id_rsa
+chmod 600 ~/ssh/id_rsa.pub
+
+chronic ssh-keyscan github.com >> ~/ssh/known_hosts
+chmod 600 ~/ssh/known_hosts
+
+mv ~/{,.}ssh/id_rsa
+mv ~/{,.}ssh/id_rsa.pub
+mv ~/{,.}ssh/known_hosts
+
+echo 'Setting up git'
+chronic git config --global user.email "idonot@care.com"
+chronic git config --global user.name "Ireallydont"
+
+echo 'Cloning coog-admin'
+chronic git clone ssh://git@github.com/coopengo/coog-admin $COOG_CODE_DIR
+chronic git -C $COOG_CODE_DIR checkout "$BRANCH"
+
+echo 'Coog admin initialization'
+chronic $COOG_CODE_DIR/init
+
+# Dirty but necessary
+yes | EDITOR="touch" $COOG_CODE_DIR/conf edit
+yes | $COOG_CODE_DIR/net create > /dev/null
+
+# Force coog image for ./coog redis commands
+echo "COOG_IMAGE=coopengo/coog:test-$BRANCH" >> $COOG_DATA_DIR/config
+chronic git -C $COOG_DATA_DIR commit -am "Force image"
+
+echo 'Start postgres'
+chronic $COOG_CODE_DIR/postgres server
+
+echo 'Start redis'
+chronic $COOG_CODE_DIR/redis server
+
+echo 'Start tests'
+source /root/secrets
+chronic $COOG_CODE_DIR/test "coopengo/coog:test-$BRANCH" "coog:$BRANCH" \
+    "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH"
