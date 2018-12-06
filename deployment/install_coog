@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# This script allows to deploy a new coog environment on an empty debian based
+# server, with only python and docker installed. It requires as parameter the
+# main branch to start on.
+#
+# It expects, in the running folder, to find:
+#   - A "ssh" folder containing the id_rsa / id_rsa.pub files to use for
+#   connecting to github
+#   - A "secret" folder which must export the environment variable to use for
+#   the server configuration
+#
+# The available variables in the "secret" file are (for now):
+#   - TARGET_IMAGE: Either an image that can be pulled from docker, either '0'
+#   in which case the image for the given BRANCH will be built on the fly
+#   - COOG_CUSTOMER: The name of the customer to include in the image build.
+#   Unused if TARGET_IMAGE is set
+#   - DOCKER_LOGIN / DOCKER_PASSWORD: The identifiers for the dockerhub
+#   repository access
+#   - GENERATE_DEMO_DATABASE: If set, a demo database will be generated after
+#   setting up the server
+
+export COOG_CODE_DIR=/tmp/coog-admin
+export COOG_DATA_DIR=/tmp/coog-data
+
+BRANCH=$1
+
+apt install -y moreutils > /dev/null
+
+echo 'Setting up SSH'
+chmod 700 ~/ssh
+chmod 600 ~/ssh/id_rsa
+chmod 600 ~/ssh/id_rsa.pub
+
+chronic ssh-keyscan github.com >> ~/ssh/known_hosts
+chmod 600 ~/ssh/known_hosts
+
+mv ~/{,.}ssh/id_rsa
+mv ~/{,.}ssh/id_rsa.pub
+mv ~/{,.}ssh/known_hosts
+
+echo 'Setting up git'
+chronic git config --global user.email "idonot@care.com"
+chronic git config --global user.name "Ireallydont"
+
+echo 'Cloning coog-admin'
+chronic git clone ssh://git@github.com/coopengo/coog-admin $COOG_CODE_DIR
+chronic git -C $COOG_CODE_DIR checkout "$BRANCH"
+
+echo 'Loading secrets'
+source /root/secrets
+
+echo 'Coog admin initialization'
+chronic $COOG_CODE_DIR/init
+
+# Dirty but necessary
+yes | EDITOR="touch" $COOG_CODE_DIR/conf edit
+yes | $COOG_CODE_DIR/net create > /dev/null
+
+if [ "$TARGET_IMAGE" = "0" ]; then
+    echo 'Build image'
+    if [ "$COOG_CUSTOMER" = "0" ]; then
+        chronic "$COOG_CODE_DIR"/coog build "coopengo/coog:$BRANCH" \
+            "coog:$BRANCH" "trytond-modules:$BRANCH" "trytond:$BRANCH" \
+            "proteus:$BRANCH" "sao:$BRANCH" "coog-bench:$BRANCH"
+    else
+        echo "customers;git@github.com/coopengo/customers" > \
+            "$COOG_CODE_DIR/images/coog/repos.custom"
+        if [ "$BRANCH" = "master" ]; then
+            CUSTOMER_BRANCH="customers:$COOG_CUSTOMER"
+        else
+            CUSTOMER_BRANCH="customers:$COOG_CUSTOMER-$BRANCH"
+        fi
+        chronic "$COOG_CODE_DIR"/coog build "coopengo/coog:$BRANCH" \
+            "coog:$BRANCH" "trytond-modules:$BRANCH" "trytond:$BRANCH" \
+            "proteus:$BRANCH" "sao:$BRANCH" "coog-bench:$BRANCH" \
+            "customers:$CUSTOMER_BRANCH"
+    fi
+else
+    echo "Logging in to docker"
+    chronic docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
+
+    echo "Pulling image"
+    chronic docker pull "$TARGET_IMAGE"
+fi
+
+echo "Building web image"
+chronic "$COOG_CODE_DIR"/web build "coopengo/web:$BRANCH" "coog-api:$BRANCH" \
+    "coog-app:$BRANCH"
+
+echo "Updating configuration"
+echo "COOG_IMAGE=coopengo/coog:$BRANCH" >> $COOG_DATA_DIR/config
+echo "WEB_IMAGE=coopengo/web:$BRANCH" >> $COOG_DATA_DIR/config
+sed -i "s/deny/allow/" "$COOG_DATA_DIR"/nginx/server-coog.conf
+chronic git -C $COOG_DATA_DIR commit -am "Basic configuration"
+
+echo 'Start postgres'
+chronic $COOG_CODE_DIR/postgres server
+
+echo 'Start redis'
+chronic $COOG_CODE_DIR/redis server
+
+if [ ! "$GENERATE_DEMO_DATABASE" = "" ]; then
+    echo "Creating test database"
+    chronic "$COOG_CODE_DIR"/coog demo
+    echo "COOG_DB_NAME=demo" >> $COOG_DATA_DIR/config
+    chronic git -C $COOG_DATA_DIR commit -am "Set demo db name"
+fi
+
+echo 'Starting Server'
+"$COOG_CODE_DIR"/coog server 1
+
+echo 'Starting web apps'
+"$COOG_CODE_DIR"/web server
+
+echo 'Starting nginx'
+"$COOG_CODE_DIR"/nginx run
+
+echo 'Up and ready'
