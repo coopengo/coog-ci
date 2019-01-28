@@ -65,7 +65,7 @@ chronic $COOG_CODE_DIR/test "coopengo/coog:$BRANCH-latest" "coog:$BRANCH" \
 
 if [ "$?" = "0" ]; then
     echo "Logging in to docker"
-    chronic docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
+    chronic docker login --username "$DOCKER_LOGIN" --password "$DOCKER_PASSWORD"
 
     echo "Pushing image"
     chronic docker push "coopengo/coog:$BRANCH-latest"
