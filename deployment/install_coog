@@ -19,9 +19,28 @@
 #   repository access
 #   - GENERATE_DEMO_DATABASE: If set, a demo database will be generated after
 #   setting up the server
+#
+# ========================= IF SSL IS REQUIRED ===============================
+#
+# Once everything is done, install certbot
+#
+#    add-apt-repository -y ppa:certbot/certbot
+#    apt update
+#    apt install certbot
+#
+# Update configuration with ./conf edit
+#
+#    NGINX_SSL_METHOD=LETSENCRYPT
+#    NGINX_SSL_SERVER_NAME=<my_hostname.coog.io>
+#
+# Then you should reset nginx config with ./nginx reset
+# and generate ssl keys with ./nginx ssl
+#
+# Restart everything, then its done. Make sure to edit server-coog-ssl to
+# update the access rights with ./nginx edit server-coog-ssl
 
-export COOG_CODE_DIR=/tmp/coog-admin
-export COOG_DATA_DIR=/tmp/coog-data
+export COOG_CODE_DIR=/root/coog-admin
+export COOG_DATA_DIR=/root/coog-data
 
 BRANCH=$1
 
@@ -100,7 +119,7 @@ chronic $COOG_CODE_DIR/postgres server
 echo 'Start redis'
 chronic $COOG_CODE_DIR/redis server
 
-if [ ! "$GENERATE_DEMO_DATABASE" = "" ]; then
+if [ "$GENERATE_DEMO_DATABASE" = "1" ]; then
     echo "Creating test database"
     chronic "$COOG_CODE_DIR"/coog demo
     echo "COOG_DB_NAME=demo" >> $COOG_DATA_DIR/config

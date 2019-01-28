@@ -3,10 +3,14 @@
 # Accepted parameters are:
 #   - BRANCH: The branch which will be used to start the service. Defaults to
 #   "master"
+#   - SERVER_TYPE: The type of instance that will be used. Defaults to X64-15GB
 #
 # The AUTO_TERMINATE environment variable can be set to anything else than "1"
 # so that the server stays up once the initialisation is done. The default
 # value is to kill it, so that persistency is a consious choice.
+#
+# The SERVER_NAME environment variable can be set to force the server name. It
+# will default to a generate name based on the current date
 #
 # The folder from which this code is run should also contain:
 #   - A "ssh" folder, with the keys (id_rsa / id_rsa.pub) that can access all
@@ -73,14 +77,14 @@ BRANCH="${1:-master}"
 
 # Server size, can be checked with "scw products servers". START1-XS are not ok
 # to run with docker
-SERVER_TYPE="X64-15GB"
+SERVER_TYPE="${2:-X64-15GB}"
 
 # Image name. We want an image with a pre-installed docker :
 #   scw images -f name=docker
 IMAGE_NAME=Docker
 
 # Nice name
-SERVER_NAME="environment-$(date '+%Y%m%d-%H%M%S')"
+SERVER_NAME="${SERVER_NAME:-environment-$(date '+%Y%m%d-%H%M%S')}"
 
 # Auto terminate instance by default to avoid long running servers
 AUTO_TERMINATE=${AUTO_TERMINATE:-1}
