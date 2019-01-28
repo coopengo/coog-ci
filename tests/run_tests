@@ -49,7 +49,7 @@ yes | EDITOR="touch" $COOG_CODE_DIR/conf edit
 yes | $COOG_CODE_DIR/net create > /dev/null
 
 # Force coog image for ./coog redis commands
-echo "COOG_IMAGE=coopengo/coog:test-$BRANCH" >> $COOG_DATA_DIR/config
+echo "COOG_IMAGE=coopengo/coog:$BRANCH-latest" >> $COOG_DATA_DIR/config
 chronic git -C $COOG_DATA_DIR commit -am "Force image"
 
 echo 'Start postgres'
@@ -60,5 +60,13 @@ chronic $COOG_CODE_DIR/redis server
 
 echo 'Start tests'
 source /root/secrets
-chronic $COOG_CODE_DIR/test "coopengo/coog:test-$BRANCH" "coog:$BRANCH" \
-    "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH"
+chronic $COOG_CODE_DIR/test "coopengo/coog:$BRANCH-latest" "coog:$BRANCH" \
+    "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH" "sao:$BRANCH"
+
+if [ "$?" = "0" ]; then
+    echo "Logging in to docker"
+    chronic docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
+
+    echo "Pushing image"
+    chronic docker push "coopengo/coog:$BRANCH-latest"
+fi
