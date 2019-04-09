@@ -51,6 +51,15 @@ _generate_web_image() {
         docker push "coopengo/web:$1"
         }
 
+_generate_portal_image() {
+        COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
+        COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
+            $PATH_TO_COOG_ADMIN/portal \
+            build coopengo/portal:$1 \
+            coog-portal:coog-$1 \
+        docker push "coopengo/portal:$1"
+        }
+
 _generate_unoconv_image() {
         COOG_CODE_DIR=$PATH_TO_COOG_ADMIN \
         COOG_DATA_DIR=$PATH_TO_COOG_ADMIN/data \
@@ -85,6 +94,10 @@ main(){
     elif [ "$IMAGE" == "unoconv" ]; then
         if [ "$CUSTOMER" == "coog" ]; then
             _generate_unoconv_image $VERSION
+        fi
+    elif [ "$IMAGE" == "portal" ]; then
+        if [ "$CUSTOMER" == "coog" ]; then
+            _generate_portal_image $VERSION
         fi
     fi
     }
