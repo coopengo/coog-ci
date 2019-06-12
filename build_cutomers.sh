@@ -2,7 +2,7 @@
 
 USAGE="""
 Usage: ./report VERSION
-	VERSION: the version you want to test on for every client
+	VERSION: the version you want to build for every client
 	You must precise only one version to test
 	ex : 2.0.30
   """
