@@ -14,10 +14,12 @@ RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 # Clone private repository
 RUN --mount=type=ssh git clone --single-branch --branch $CUSTOMER-coog-$VERSION git@github.com:coopengo/customers.git
 
-#RUN git -b checkout $VERSION_TAG
+WORKDIR "/customers"
 
-RUN mv customers/modules/* /workspace/coog/modules \
-    && rm -rf customers
+RUN git checkout $CUSTOMER-coog-$VERSION_TAG
+
+RUN mv modules/* /workspace/coog/modules \
+    && rm -rf /customers
 
 # Add symbolic links
 RUN ep link
