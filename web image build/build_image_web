@@ -22,6 +22,7 @@ Options:
                         of them (set by default)
     -v, --verbose       Explain what is being done during the
                         build of the image
+    -h, --help          Display this guide
   """
 
 _usage(){
@@ -42,7 +43,6 @@ _build_single_img(){
 
 _build_image_from_file(){
 
-    echo 'on est là'
     file="customers"
     
     while IFS= read -r line
@@ -65,7 +65,11 @@ if [[ $# -lt 1 ]]; then
     echo "Wrong arguments" && _usage && exit 1
 fi 
 
-echo $1 | grep -Eq '[0-9]*.[0-9]*.[0-9]*' && is_version=true
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+    _usage && exit 1
+fi
+
+echo $1 | grep -Eq '[0-9]*\.[0-9]*\.[0-9]*' && is_version=true
 
 if [[ "$is_version" == false ]]; then
     echo ""
