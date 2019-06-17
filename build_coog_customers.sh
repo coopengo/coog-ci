@@ -7,8 +7,6 @@ Usage: ./build_coog_customers.sh -v TAG_VERSION -c CUSTOMER
 
 	-c CUSTOMER: the customer you release version for.
 	             use "--all" if you want to build image for every customers in "customers" file
-
-	ex: ./build_coog_customers.sh 2.0.30 --all
   """
 
 _get_version_from_tag(){
