@@ -76,6 +76,8 @@ _docker_images(){
     done
     # create coog web vanilla image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "web"
+    # create customer web image (don't forget to fill the web_customers file in ./web_image_build)
+    ./web_image_build/build_image_web "$VERSION" 
     # create unoconv image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "unoconv"
 }

@@ -17,7 +17,7 @@ VERSION:                The version you want to build for every client
 Options: 
     -c, --customer      Allow to precise a customer for who you
                         want to build the image.                      
-    -a, --all           Will read the file customers line by
+    -a, --all           Will read the file web_customers line by
                         line and create a web image for each 
                         of them (set by default)
     -v, --verbose       Explain what is being done during the
@@ -43,7 +43,7 @@ _build_single_img(){
 
 _build_image_from_file(){
 
-    file="customers"
+    file="web_customers"
     
     while IFS= read -r line
         do
