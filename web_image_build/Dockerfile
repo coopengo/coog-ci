@@ -8,25 +8,18 @@ ARG CUSTOMER
 ARG VERSION_TAG
 ARG VERSION
 
-
-RUN apk add openssh git
-
-# Download public key for github.com
-RUN mkdir -p -m 0600 ~/.ssh 
-RUN ssh-keyscan github.com >> ~/.ssh/known_hosts
-
+# Download public key for github.cdom
+RUN apk add -qU openssh git \
+    && mkdir -p -m 0600 ~/.ssh \
+    && ssh-keyscan github.com >> ~/.ssh/known_hosts 
+    
 WORKDIR /web
-
-# Clone private repository
-RUN --mount=type=ssh git clone --single-branch --branch ${CUSTOMER}-coog-${VERSION_TAG} git@github.com:coopengo/customers.git
+RUN --mount=type=ssh git clone --single-branch --branch ${CUSTOMER}-coog-${VERSION_TAG} git@github.com:coopengo/customers.git \
+    && rm -rf ~/.ssh
 
 WORKDIR /web/customers
 
 RUN git checkout $CUSTOMER-coog-${VERSION}
-
-RUN ls /
-RUN ls /web
-RUN ls /web/customers
 
 WORKDIR /web/coog-api
 
