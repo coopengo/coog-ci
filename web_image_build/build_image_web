@@ -42,8 +42,9 @@ _build_single_img(){
 }
 
 _build_image_from_file(){
-
-    file="web_customers"
+    
+    SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+    file="${SCRIPTPATH}/web_customers"
     
     while IFS= read -r line
         do
