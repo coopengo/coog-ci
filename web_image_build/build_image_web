@@ -31,13 +31,15 @@ _usage(){
 
 _build_single_img(){
     NAME=$1
+    SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
     if [[ "$verbosity" == true ]]; then
         echo "docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default ."
-        docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default .
+        docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default "$SCRIPTPATH"
     else
-        echo "docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default ."
-        docker build --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default .
+        echo "docker build --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default ."
+        docker build --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default "$SCRIPTPATH"
     fi
+
 
 }
 
