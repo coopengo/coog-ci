@@ -33,11 +33,11 @@ _build_single_img(){
     NAME=$1
     SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
     if [[ "$verbosity" == true ]]; then
-        echo "docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default ."
-        docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default "$SCRIPTPATH"
+        echo "docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default ."
+        docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default "$SCRIPTPATH"
     else
-        echo "docker build --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default ."
-        docker build --no-cache --tag="coopengo/web-$NAME:$VERSION" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$VERSION" --ssh default "$SCRIPTPATH"
+        echo "docker build --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default ."
+        docker build --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default "$SCRIPTPATH"
     fi
 
 
@@ -81,9 +81,9 @@ fi
 
 major_version="$(cut -d'.' -f1 <<<"$1")"
 minor_version="$(cut -d'.' -f2 <<<"$1")" 
-version="$major_version.$minor_version"
-VERSION=$1
-docker_import="coopengo/web:$VERSION"
+gh_branch_version="$major_version.$minor_version"
+image_version=$1
+docker_import="coopengo/web:$image_version"
 shift
 
 
