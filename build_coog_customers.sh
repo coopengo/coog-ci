@@ -19,6 +19,11 @@ _get_docker_import(){
 	DOCKER_IMPORT="coopengo/coog:$1"
 }
 
+_get_custom_repos(){
+	read -r GIT_REPOS < "../coog-admin/images/coog/repos.custom"
+	GIT_REPOS=${GIT_REPOS##*;}.git
+	echo "$GIT_REPOS"
+}
 _build_image_customer(){
 	if [ $1 = "--all" ]
 	then
@@ -26,18 +31,19 @@ _build_image_customer(){
 	    while IFS= read -r line
 	    do
 	    	NAME=${line%:*}
-	    	docker build --tag="coopengo/coog-$NAME:$2" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$2" --build-arg IMPORT="$DOCKER_IMPORT" --build-arg VERSION="$version" --ssh default .
+	    	docker build --tag="coopengo/coog-$NAME:$2" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$2" --build-arg IMPORT="$DOCKER_IMPORT" --build-arg VERSION="$version" --build-arg CUSTOM_REPOS="$GIT_REPOS" --ssh default .
 	    done < "$file"
 	else
 		echo "$1"
 		NAME="$1"
-		docker build --tag="coopengo/coog-$NAME:$2" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$2" --build-arg IMPORT="$DOCKER_IMPORT" --build-arg VERSION="$version" --ssh default .
+		docker build --tag="coopengo/coog-$NAME:$2" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$2" --build-arg IMPORT="$DOCKER_IMPORT" --build-arg VERSION="$version" --build-arg CUSTOM_REPOS="$GIT_REPOS" --ssh default .
 	fi
 }
 
 main() {
 	_get_version_from_tag $TAG_VERSION
 	_get_docker_import $TAG_VERSION
+	_get_custom_repos
 	_build_image_customer $CUSTOMER $TAG_VERSION
 }
 
