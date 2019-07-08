@@ -9,8 +9,7 @@ ARG VERSION_TAG
 ARG VERSION
 
 # Download public key for github.cdom
-RUN apk add -qU openssh git \
-    && mkdir -p -m 0600 ~/.ssh \
+RUN mkdir -p -m 0600 ~/.ssh \
     && ssh-keyscan github.com >> ~/.ssh/known_hosts 
     
 WORKDIR /web
