@@ -28,7 +28,7 @@ RUN apk add --no-cache --virtual .build-deps wget ca-certificates make gcc g++ p
     && rm -rf /root/.node-gyp \
     && apk del .build-deps
 
-# # Add symbolic links
+# Add symbolic links
 RUN ep link
 
 VOLUME ["/web/coog-app"]
