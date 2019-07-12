@@ -40,6 +40,8 @@ _build_single_img(){
         docker build --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default "$SCRIPTPATH"
     fi
 
+    docker push "coopengo/web-$NAME:$image_version"
+
 
 }
 
