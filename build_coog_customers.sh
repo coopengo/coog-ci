@@ -45,8 +45,8 @@ main() {
 	_get_docker_import $TAG_VERSION
 	_get_custom_repos
 	_build_image_customer $CUSTOMER $TAG_VERSION
-    echo "docker push coopengo/coog-$NAME:$2"
-    docker push "coopengo/coog-$NAME:$2"
+    echo "docker push coopengo/coog-$NAME:$TAG_VERSION"
+    docker push "coopengo/coog-$NAME:$TAG_VERSION"
 }
 
 
