@@ -24,6 +24,7 @@ _get_custom_repos(){
 	GIT_REPOS=${GIT_REPOS##*;}.git
 	echo "$GIT_REPOS"
 }
+
 _build_image_customer(){
 	if [ $1 = "--all" ]
 	then

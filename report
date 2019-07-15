@@ -71,9 +71,7 @@ _docker_images(){
     # generate coog vanilla image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "coog"
     # generate customer coog image
-    for customer in ${customers_in_version[@]}; do
-        ./build_coog_customers.sh -v "$VERSION" -c "$customer"
-    done
+    ./build_coog_customers.sh -v "$VERSION" -c "--all"
     # create coog web vanilla image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "web"
     # create customer web image (don't forget to fill the web_customers file in ./web_image_build)

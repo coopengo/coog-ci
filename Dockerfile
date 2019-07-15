@@ -15,9 +15,11 @@ RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 RUN --mount=type=ssh git clone --single-branch --branch $CUSTOMER-coog-$VERSION $CUSTOM_REPOS \
     && rm -rf ~/.ssh
 
-WORKDIR "/customers"
-
-RUN git checkout $CUSTOMER-coog-$VERSION_TAG \
-    && mv modules/* /workspace/coog/modules \
+RUN cd customers \
+    && git checkout $CUSTOMER-coog-$VERSION_TAG \
+    && cd .. \
+    && mkdir workspace/customers \
+    && mv customers/modules /workspace/customers/ \
     && rm -rf /customers \
     && ep link
+
