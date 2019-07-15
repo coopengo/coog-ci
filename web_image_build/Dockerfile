@@ -9,8 +9,7 @@ ARG VERSION_TAG
 ARG VERSION
 
 # Download public key for github.cdom
-RUN apk add -qU openssh git \
-    && mkdir -p -m 0600 ~/.ssh \
+RUN mkdir -p -m 0600 ~/.ssh \
     && ssh-keyscan github.com >> ~/.ssh/known_hosts 
     
 WORKDIR /web
@@ -29,7 +28,7 @@ RUN apk add --no-cache --virtual .build-deps wget ca-certificates make gcc g++ p
     && rm -rf /root/.node-gyp \
     && apk del .build-deps
 
-# # Add symbolic links
+# Add symbolic links
 RUN ep link
 
 VOLUME ["/web/coog-app"]
