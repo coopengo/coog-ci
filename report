@@ -97,6 +97,11 @@ _remove_bench_tmp_files(){
     fi
 }
 
+_handle_ssh(){
+    ssh-agent bash
+    ssh-add ~/.ssh/id_rsa
+}
+
 main() {
     _checkout_coog_admin
     calculate_customer_version
@@ -106,6 +111,7 @@ main() {
     python bl_support.py $VERSION
     python html_to_pdf.py
     _remove_bench_tmp_files
+    _handle_ssh
     _docker_images
 }
 

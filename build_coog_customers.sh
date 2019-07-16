@@ -25,11 +25,6 @@ _get_custom_repos(){
 	echo "$GIT_REPOS"
 }
 
-_ssh_stuff(){
-    ssh-agent bash
-    ssh-add ~/.ssh/id_rsa
-}
-
 _build_image_customer(){
 	if [ $1 = "--all" ]
 	then
@@ -50,7 +45,6 @@ main() {
 	_get_version_from_tag $TAG_VERSION
 	_get_docker_import $TAG_VERSION
 	_get_custom_repos
-    _ssh_stuff
 	_build_image_customer $CUSTOMER $TAG_VERSION
     echo "docker push coopengo/coog-$NAME:$TAG_VERSION"
     docker push "coopengo/coog-$NAME:$TAG_VERSION"
