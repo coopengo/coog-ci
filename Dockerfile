@@ -17,6 +17,7 @@ RUN --mount=type=ssh git clone --single-branch --branch $CUSTOMER-coog-$VERSION 
 
 RUN cd customers \
     && git checkout $CUSTOMER-coog-$VERSION_TAG \
+    && git pull origin \ 
     && cd .. \
     && mkdir workspace/customers \
     && mv customers/modules /workspace/customers/ \
