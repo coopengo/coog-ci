@@ -13,14 +13,13 @@ ARG CUSTOM_REPOS
 RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts 
 
 RUN --mount=type=ssh git clone --single-branch --branch $CUSTOMER-coog-$VERSION $CUSTOM_REPOS \
-    && rm -rf ~/.ssh
-
-RUN cd customers \
+    && cd customers \
     && git checkout $CUSTOMER-coog-$VERSION_TAG \
     && git pull origin \ 
     && cd .. \
     && mkdir workspace/customers \
     && mv customers/modules /workspace/customers/ \
     && rm -rf /customers \
+    && rm -rf ~/.ssh \
     && ep link
 
