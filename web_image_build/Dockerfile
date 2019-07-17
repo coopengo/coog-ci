@@ -14,11 +14,10 @@ RUN mkdir -p -m 0600 ~/.ssh \
     
 WORKDIR /web
 RUN --mount=type=ssh git clone --single-branch --branch ${CUSTOMER}-coog-${VERSION_TAG} git@github.com:coopengo/customers.git \
+    && cd /web/customers \
+    && git checkout $CUSTOMER-coog-${VERSION} \
+    && git pull origin \
     && rm -rf ~/.ssh
-
-WORKDIR /web/customers
-
-RUN git checkout $CUSTOMER-coog-${VERSION}
 
 WORKDIR /web/coog-api
 
@@ -26,9 +25,7 @@ RUN apk add --no-cache --virtual .build-deps wget ca-certificates make gcc g++ p
     && npm i --production \
     && npm cache clean --force \
     && rm -rf /root/.node-gyp \
-    && apk del .build-deps \
-    && cd /web/customers \
-    && git pull origin
+    && apk del .build-deps 
 
 # Add symbolic links
 RUN ep link
