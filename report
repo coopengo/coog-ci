@@ -98,11 +98,12 @@ _remove_bench_tmp_files(){
 }
 
 _handle_ssh(){
-    ssh-agent bash
+    eval "$(ssh-agent -s)"
     ssh-add ~/.ssh/id_rsa
 }
 
 main() {
+    _handle_ssh
     _checkout_coog_admin
     calculate_customer_version
     _list_all_issues
@@ -111,7 +112,6 @@ main() {
     python bl_support.py $VERSION
     python html_to_pdf.py
     _remove_bench_tmp_files
-    _handle_ssh
     _docker_images
 }
 
