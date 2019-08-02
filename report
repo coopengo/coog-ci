@@ -71,11 +71,11 @@ _docker_images(){
     # generate coog vanilla image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "coog"
     # generate customer coog image
-    for customer in ${customers_in_version[@]}; do
-        ./create_docker_image -c "$customer" -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "coog"
-    done
+    ./build_coog_customers.sh -v "$VERSION" -c "--all"
     # create coog web vanilla image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "web"
+    # create customer web image (don't forget to fill the web_customers file in ./web_image_build)
+    ./web_image_build/build_image_web "$VERSION" 
     # create unoconv image
     ./create_docker_image -c coog -v "$VERSION" -a "$COOG_ADMIN_PATH" -i "unoconv"
 }
@@ -97,7 +97,13 @@ _remove_bench_tmp_files(){
     fi
 }
 
+_handle_ssh(){
+    eval "$(ssh-agent -s)"
+    ssh-add ~/.ssh/id_rsa
+}
+
 main() {
+    _handle_ssh
     _checkout_coog_admin
     calculate_customer_version
     _list_all_issues

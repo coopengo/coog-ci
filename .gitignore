@@ -6,3 +6,4 @@ reports/
 repos.custom
 repos.common
 customers
+web_image_build/web_customers
