@@ -65,11 +65,13 @@ BRANCH="${1:-master}"
 
 # Server size, can be checked with "scw products servers". START1-XS are not ok
 # to run with docker
-SERVER_TYPE="X64-15GB"
+SERVER_TYPE=${SERVER_TYPE:-"X64-15GB"}
+
+echo $SERVER_TYPE
 
 # Image name. We want an image with a pre-installed docker :
 #   scw images -f name=docker
-IMAGE_NAME=Docker
+IMAGE_NAME=Debian_Buster
 
 # Nice name
 SERVER_NAME="test-$(date '+%Y%m%d-%H%M%S')"

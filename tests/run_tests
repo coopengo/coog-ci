@@ -16,10 +16,13 @@ export COOG_CODE_DIR=/tmp/coog-admin
 export COOG_DATA_DIR=/tmp/coog-data
 export TEST=1
 export CACHE_DB=x
+export KUBERNETES=false
 
 BRANCH=$1
 
 apt install -y moreutils > /dev/null
+chronic apt install -y docker docker-compose
+chronic service docker start
 
 echo 'Setting up SSH'
 chmod 700 ~/ssh
@@ -60,7 +63,7 @@ chronic $COOG_CODE_DIR/redis server
 
 echo 'Start tests'
 source /root/secrets
-chronic $COOG_CODE_DIR/test "coopengo/coog:$BRANCH-latest" "coog:$BRANCH" \
+chronic $COOG_CODE_DIR/test "$BRANCH-latest" "coog:$BRANCH" \
     "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH" "sao:$BRANCH"
 
 if [ "$?" = "0" ]; then
