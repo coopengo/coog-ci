@@ -22,6 +22,9 @@ BRANCH=$1
 
 apt install -y moreutils > /dev/null
 chronic apt install -y docker docker-compose
+
+# Autoinstalled, breaks docker login
+chronic apt remove --purge golang-docker-credential-helpers
 chronic service docker start
 
 echo 'Setting up SSH'
