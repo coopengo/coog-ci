@@ -67,8 +67,6 @@ BRANCH="${1:-master}"
 # to run with docker
 SERVER_TYPE=${SERVER_TYPE:-"X64-15GB"}
 
-echo $SERVER_TYPE
-
 # Image name. We want an image with a pre-installed docker :
 #   scw images -f name=docker
 IMAGE_NAME=Debian_Buster

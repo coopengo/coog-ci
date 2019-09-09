@@ -54,6 +54,7 @@ yes | $COOG_CODE_DIR/net create > /dev/null
 
 # Force coog image for ./coog redis commands
 echo "COOG_IMAGE=coopengo/coog:$BRANCH-latest" >> $COOG_DATA_DIR/config
+chronic chmod -R 0777 /tmp/coog-data/coog
 chronic git -C $COOG_DATA_DIR commit -am "Force image"
 
 echo 'Start postgres'
@@ -66,7 +67,6 @@ echo 'Start tests'
 source /root/secrets
 
 # Change access rights for generated documents
-chronic chmod a+rwx /tmp/coog-data/coog
 chronic $COOG_CODE_DIR/test "$BRANCH-latest" "coog:$BRANCH" \
     "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH" "sao:$BRANCH"
 
