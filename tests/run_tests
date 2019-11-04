@@ -20,6 +20,7 @@ export KUBERNETES=false
 
 BRANCH=$1
 
+apt update
 apt install -y moreutils > /dev/null
 chronic apt install -y docker docker-compose
 
