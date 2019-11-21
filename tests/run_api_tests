@@ -1,0 +1,165 @@
+#!/bin/bash
+#
+# This script allows to run the full coog test suite for versions >= 2.0,
+# starting with an empty debian based server (with docker already installed)
+#
+# It expects a:
+#   - A "ssh" folder containing the id_rsa / id_rsa.pub files to use for
+#   connecting to github
+#   - A "secret" folder which must export the MAIL_USER and MAIL_PASSWORD
+#   environment variables. Those are necessary to effectively send the test
+#   report by email
+#
+# The script requires one parameter, which is the branch that will be tested
+
+export COOG_CODE_DIR=/tmp/coog-admin
+export COOG_DATA_DIR=/tmp/coog-data
+export KUBERNETES=false
+export BRANCH=$1
+
+source /root/secrets
+
+echo "Updating apt repository"
+apt update
+
+echo "Installing required components"
+apt install -y moreutils > /dev/null
+chronic apt install -y docker docker-compose
+
+chronic service docker start
+
+echo 'Setting up SSH'
+chmod 700 ~/ssh
+chmod 600 ~/ssh/id_rsa
+chmod 600 ~/ssh/id_rsa.pub
+
+chronic ssh-keyscan github.com >> ~/ssh/known_hosts
+chmod 600 ~/ssh/known_hosts
+
+mv ~/{,.}ssh/id_rsa
+mv ~/{,.}ssh/id_rsa.pub
+mv ~/{,.}ssh/known_hosts
+
+echo 'Setting up git'
+chronic git config --global user.email "idonot@care.com"
+chronic git config --global user.name "Ireallydont"
+
+echo 'Cloning coog-admin'
+chronic git clone ssh://git@github.com/coopengo/coog-admin $COOG_CODE_DIR
+chronic git -C $COOG_CODE_DIR checkout "$BRANCH"
+
+echo 'Coog admin initialization'
+chronic $COOG_CODE_DIR/init
+
+# Dirty but necessary
+yes | EDITOR="touch" $COOG_CODE_DIR/conf edit
+yes | $COOG_CODE_DIR/net create > /dev/null
+
+# Override configuration
+echo "COOG_IMAGE=coopengo/coog:$BRANCH-latest" >> $COOG_DATA_DIR/config
+echo "COOG_DB_NAME=demo" >> $COOG_DATA_DIR/config
+echo "WEB_IMAGE=coopengo/web:$BRANCH-latest" >> $COOG_DATA_DIR/config
+echo "[debug]" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
+echo "disable_syntax_analysis = True" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
+echo "[document_api]" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
+echo "document_token_secret = default" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
+
+echo "location /web/api/ {" > "$COOG_DATA_DIR/nginx/server-web.conf"
+echo "    proxy_pass http://web_workers/;" >> "$COOG_DATA_DIR/nginx/server-web.conf"
+echo "}" >> "$COOG_DATA_DIR/nginx/server-web.conf"
+
+echo "upstream web_workers {" > "$COOG_DATA_DIR/nginx/http-web.conf"
+echo "    server root-web:3000;" >> "$COOG_DATA_DIR/nginx/http-web.conf"
+echo "}" >> "$COOG_DATA_DIR/nginx/http-web.conf"
+chronic chmod -R 0777 /tmp/coog-data/coog
+chronic git -C $COOG_DATA_DIR commit -am "Force image"
+
+echo "Cloning API V2"
+chronic git clone git@github.com:coopengo/coog-portal /tmp/portal
+
+echo "Installing API V2"
+chronic curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /tmp/n
+chronic bash /tmp/n 10.16
+chronic npm i -g yarn
+chronic bash -c "cd /tmp/portal && yarn"
+
+echo 'Start postgres'
+chronic $COOG_CODE_DIR/postgres server
+
+echo 'Start redis'
+chronic $COOG_CODE_DIR/redis server
+
+echo 'Start Mongo'
+chronic docker run --name mongo -d -p 27017:27017 mongo
+
+# Autoinstalled, breaks docker login
+chronic apt remove --purge -y golang-docker-credential-helpers
+
+echo "Logging in to docker"
+chronic docker login --username "$DOCKER_LOGIN" --password "$DOCKER_PASSWORD"
+
+echo "Fetching latest stable coog image"
+chronic docker pull "coopengo/coog:$BRANCH-latest"
+
+echo "Building API V1 image"
+chronic $COOG_CODE_DIR/web build coopengo/web:"$BRANCH"-latest "coog-api:$BRANCH"
+
+echo "Building demo database"
+chronic $COOG_CODE_DIR/coog demo
+
+echo "Starting coog server"
+chronic $COOG_CODE_DIR/coog server 1
+
+echo "Starting API V1 server"
+chronic $COOG_CODE_DIR/web server
+
+echo "Starting nginx"
+chronic $COOG_CODE_DIR/nginx run
+
+# Configuration for tests
+export COOG_API_IDENTITY_MANAGER_URL=http://localhost:3006
+export COOG_API_IDENTITY_PORT=3006
+export COOG_API_URL=http://localhost:80/web/api
+export COOG_API_V1_URL=http://localhost:80/web/api
+export COOG_API_URL_V2=http://localhost:3005
+export COOG_API_V2_PORT=3005
+export COOG_DB_NAME=demo
+export COOG_GATEWAY_PORT=8010
+export COOG_GATEWAY_URL=http://localhost:8010
+export COOG_MODULE=true
+export COOG_PORTAL_URL=http://localhost:4000
+export COOG_TOKEN_MODULE=true
+export COOG_URL=http://localhost:80
+export COOG_WEB_TOKEN=76600ced5ee349d767a0fd838886ab354de929bf991294d0
+export COOG_API_B2C_URL=/
+export COOG_API_B2C_PORT=3016
+export COOG_API_B2C_CONFIG=http://localhost:8009
+export COOG_API_B2B_CONFIG_URL=http://localhost:8009
+export COOG_DOCUMENT_TOKEN_SECRET=default
+export JWT_ENCRYPTION=jwt_please_change
+export JWT_EXPIRATION=3600
+export JWT_INTERNAL_ENCRYPTION=default
+export NODE_PATH=src/
+export NODE_ENV=development
+export API_URL=localhost:80/web/api
+
+mkdir /tmp/api_test
+cd /tmp/portal
+
+echo "Starting required components"
+DEBUG="network:*" yarn start:api > /tmp/api.txt 2>&1 & \
+    yarn start:gateway > /tmp/gateway.txt 2>&1 & \
+    yarn start:identity > /tmp/identity.txt 2>&1 &
+
+echo "Starting tests"
+cd /tmp/portal/packages/coog-gateway && yarn test > /tmp/api_test.eml 2>&1
+
+if [ "$?" != "0" ]; then
+    mv /tmp/api.txt /tmp/api_test/api.txt
+    mv /tmp/gateway.txt /tmp/api_test/gateway.txt
+    mv /tmp/identity.txt /tmp/api_test/identity.txt
+    docker logs root-web > /tmp/api_test/api_v1.txt 2>&1
+fi
+
+echo "Sending result email"
+TARGET_RESULTS=/tmp/api_test python $COOG_CODE_DIR/send_report

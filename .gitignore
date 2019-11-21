@@ -6,3 +6,5 @@ reports/
 repos.custom
 repos.common
 customers
+tests/secrets
+tests/ssh

@@ -74,6 +74,13 @@ IMAGE_NAME=Debian_Buster
 # Nice name
 SERVER_NAME="test-$(date '+%Y%m%d-%H%M%S')"
 
+# Identify test script
+if [ "${TEST_APIS:-0}" != "0" ]; then
+    TEST_SCRIPT=run_api_tests
+else
+    TEST_SCRIPT=run_tests
+fi
+
 # Login
 echo Logging in to scaleway
 scw login \
@@ -100,7 +107,9 @@ function terminate {
     scw rm -f "$SERVER_ID" > /dev/null
 }
 
-trap terminate EXIT
+if [ "${DISABLE_AUTO_TERMINATE:-notset}" = "notset" ]; then
+    trap terminate EXIT
+fi
 
 # Start it
 echo ""
@@ -113,7 +122,7 @@ scw cp ssh "$SERVER_ID":/root 2>&1
 
 # Copy test script
 echo "Copying test script"
-scw cp run_tests "$SERVER_ID:/root" 2>&1
+scw cp "$TEST_SCRIPT" "$SERVER_ID:/root" 2>&1
 scw cp secrets "$SERVER_ID:/root" 2>&1
 
 # Run script
@@ -121,7 +130,7 @@ echo "Starting test run"
 echo ""
 # For some reason, without this the file won't be found for running
 scw exec --wait "$SERVER_ID" 'ls /root' > /dev/null
-scw exec --wait "$SERVER_ID" "/root/run_tests $BRANCH"
+scw exec --wait "$SERVER_ID" "/root/$TEST_SCRIPT $BRANCH"
 
 # The end
 echo ""
