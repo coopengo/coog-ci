@@ -131,8 +131,10 @@ export COOG_PORTAL_URL=http://localhost:4000
 export COOG_TOKEN_MODULE=true
 export COOG_URL=http://localhost:80
 export COOG_WEB_TOKEN=76600ced5ee349d767a0fd838886ab354de929bf991294d0
-export COOG_API_B2C_URL=/
+export COOG_API_B2C_URL=http://localhost:3016
 export COOG_API_B2C_PORT=3016
+export COOG_API_REFERENTIAL_URL=http://localhost:3017
+export COOG_API_REFERENTIAL_PORT=3017
 export COOG_API_B2C_CONFIG=http://localhost:8009
 export COOG_API_B2B_CONFIG_URL=http://localhost:8009
 export COOG_DOCUMENT_TOKEN_SECRET=default
@@ -147,9 +149,11 @@ mkdir /tmp/api_test
 cd /tmp/portal
 
 echo "Starting required components"
-DEBUG="network:*" yarn start:api > /tmp/api.txt 2>&1 & \
-    yarn start:gateway > /tmp/gateway.txt 2>&1 & \
-    yarn start:identity > /tmp/identity.txt 2>&1 &
+DEBUG="network:*" yarn start:api > /tmp/api.txt 2>&1 < /dev/null & \
+    yarn start:gateway > /tmp/gateway.txt 2>&1 < /dev/null & \
+    yarn start:api-referential > /tmp/api-referential.txt 2>&1 < /dev/null & \
+    yarn start:api-b2c > /tmp/api-b2c.txt 2>&1 < /dev/null & \
+    yarn start:identity > /tmp/identity.txt 2>&1 < /dev/null &
 
 echo "Starting tests"
 cd /tmp/portal/packages/coog-gateway && yarn test > /tmp/api_test.eml 2>&1
