@@ -145,6 +145,9 @@ export NODE_PATH=src/
 export NODE_ENV=development
 export API_URL=localhost:80/web/api
 
+echo "Waiting for server readiness"
+curl http://localhost:80/demo/readiness
+
 mkdir /tmp/api_test
 cd /tmp/portal
 
