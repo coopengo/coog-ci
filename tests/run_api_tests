@@ -19,6 +19,11 @@ export BRANCH=$1
 
 source /root/secrets
 
+echo "Sending slack notification"
+curl -X POST -H 'Content-type: application/json' \
+    --data "{\"text\":\"$BRANCH : API Tests started\"}" \
+    "$SLACK_WEBHOOK"
+
 echo "Updating apt repository"
 apt update
 
@@ -165,7 +170,19 @@ if [ "$?" != "0" ]; then
     mv /tmp/api.txt /tmp/api_test/api.txt
     mv /tmp/gateway.txt /tmp/api_test/gateway.txt
     mv /tmp/identity.txt /tmp/api_test/identity.txt
+    mv /tmp/api-referential.txt /tmp/api_test/api-referential.txt
+    mv /tmp/api-b2c.txt /tmp/api_test/api-b2c.txt
     docker logs root-web > /tmp/api_test/api_v1.txt 2>&1
+
+    echo "Sending slack notification"
+    curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"$BRANCH : APIs KO\"}" \
+        "$SLACK_WEBHOOK"
+else
+    echo "Sending slack notification"
+    curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"$BRANCH : APIs OK\"}" \
+        "$SLACK_WEBHOOK"
 fi
 
 echo "Sending result email"

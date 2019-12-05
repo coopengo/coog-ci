@@ -20,6 +20,13 @@ export KUBERNETES=false
 
 BRANCH=$1
 
+source /root/secrets
+
+echo "Sending slack notification"
+curl -X POST -H 'Content-type: application/json' \
+    --data "{\"text\":\"$BRANCH : Tests started\"}" \
+    "$SLACK_WEBHOOK"
+
 apt update
 apt install -y moreutils > /dev/null
 chronic apt install -y docker docker-compose
@@ -65,8 +72,6 @@ echo 'Start redis'
 chronic $COOG_CODE_DIR/redis server
 
 echo 'Start tests'
-source /root/secrets
-
 # Change access rights for generated documents
 chronic $COOG_CODE_DIR/test "$BRANCH-latest" "coog:$BRANCH" \
     "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH" "sao:$BRANCH"
@@ -80,4 +85,14 @@ if [ "$?" = "0" ]; then
 
     echo "Pushing image"
     chronic docker push "coopengo/coog:$BRANCH-latest"
+
+    echo "Sending slack notification"
+    curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"$BRANCH : OK\"}" \
+        "$SLACK_WEBHOOK"
+else
+    echo "Sending slack notification"
+    curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"$BRANCH : KO\"}" \
+        "$SLACK_WEBHOOK"
 fi
