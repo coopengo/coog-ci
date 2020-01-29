@@ -165,6 +165,7 @@ DEBUG="network:*" yarn start:api > /tmp/api.txt 2>&1 < /dev/null & \
 
 echo "Starting tests"
 cd /tmp/portal/packages/coog-gateway && yarn test > /tmp/api_test.eml 2>&1
+mv /tmp/portal/packages/coog-gateway/.newman/reports.html > /tmp/api_test/
 
 if [ "$?" != "0" ]; then
     mv /tmp/api.txt /tmp/api_test/api.txt
