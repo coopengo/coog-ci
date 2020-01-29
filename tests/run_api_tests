@@ -32,9 +32,7 @@ apt install -y moreutils > /dev/null
 chronic apt install -y docker docker-compose
 
 chronic service docker start
-
-echo 'Setting up SSH'
-chmod 700 ~/ssh
+echo 'Setting up SSH' chmod 700 ~/ssh
 chmod 600 ~/ssh/id_rsa
 chmod 600 ~/ssh/id_rsa.pub
 
@@ -165,7 +163,6 @@ DEBUG="network:*" yarn start:api > /tmp/api.txt 2>&1 < /dev/null & \
 
 echo "Starting tests"
 cd /tmp/portal/packages/coog-gateway && yarn test > /tmp/api_test.eml 2>&1
-mv /tmp/portal/packages/coog-gateway/.newman/reports.html /tmp/api_test/
 
 if [ "$?" != "0" ]; then
     mv /tmp/api.txt /tmp/api_test/api.txt
@@ -187,4 +184,5 @@ else
 fi
 
 echo "Sending result email"
+mv /tmp/portal/packages/coog-gateway/.newman/reports.html /tmp/api_test/
 TARGET_RESULTS=/tmp/api_test python $COOG_CODE_DIR/send_report
