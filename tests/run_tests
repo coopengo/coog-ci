@@ -19,7 +19,7 @@ export KUBERNETES=false
 
 BRANCH=$1
 
-if  [[ "$BRANCH" = "coog-2.0" ]] ||Î [[ "$BRANCH" = "coog-2.2" ]] || [[ "$BRANCH" = "coog-2.4" ]]; then
+if  [[ "$BRANCH" = "coog-2.0" ]] || [[ "$BRANCH" = "coog-2.2" ]] || [[ "$BRANCH" = "coog-2.4" ]]; then
     export CACHE_DB=x
 fi
 
