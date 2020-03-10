@@ -29,7 +29,7 @@ apt update
 
 echo "Installing required components"
 apt install -y moreutils > /dev/null
-chronic apt install -y docker docker-compose
+chronic apt install -y docker docker-compose jq
 
 chronic service docker start
 echo 'Setting up SSH' chmod 700 ~/ssh
@@ -66,7 +66,6 @@ echo "[debug]" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
 echo "disable_syntax_analysis = True" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
 echo "[document_api]" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
 echo "document_token_secret = default" >> "$COOG_DATA_DIR/coog/conf/coog.conf"
-
 echo "location /web/api/ {" > "$COOG_DATA_DIR/nginx/server-web.conf"
 echo "    proxy_pass http://web_workers/;" >> "$COOG_DATA_DIR/nginx/server-web.conf"
 echo "}" >> "$COOG_DATA_DIR/nginx/server-web.conf"
@@ -149,7 +148,8 @@ export NODE_ENV=development
 export API_URL=localhost:80/web/api
 
 echo "Waiting for server readiness"
-curl http://localhost:80/demo/readiness
+curl http://$(docker inspect root-coog-server | \
+    jq -r ".[0].NetworkSettings.Networks.root.IPAddress"):8000/demo/readiness
 
 mkdir /tmp/api_test
 cd /tmp/portal
@@ -162,7 +162,7 @@ DEBUG="network:*" yarn start:api > /tmp/api.txt 2>&1 < /dev/null & \
     yarn start:identity > /tmp/identity.txt 2>&1 < /dev/null &
 
 echo "Starting tests"
-cd /tmp/portal/packages/coog-gateway && yarn test > /tmp/api_test.eml 2>&1
+cd /tmp/portal/packages/coog-gateway && yarn test 2> /tmp/api_test.eml
 
 if [ "$?" != "0" ]; then
     mv /tmp/api.txt /tmp/api_test/api.txt
@@ -184,5 +184,5 @@ else
 fi
 
 echo "Sending result email"
-mv /tmp/portal/packages/coog-gateway/.newman/reports.html /tmp/api_test/
+mv /tmp/portal/packages/coog-gateway/.newman/reports.html /tmp/api_test/reports-$(date --iso).html
 TARGET_RESULTS=/tmp/api_test python $COOG_CODE_DIR/send_report
