@@ -193,7 +193,7 @@ update_version() {
 }
 
 main() {
-    for repo in $(find "$WORKING_PATH" -name .git -type d -prune | sed 's!\.git!!'); do
+    for repo in $(find "$WORKING_PATH" -name .git -type d -prune | sed 's!\.git!!' | sort -r); do
         echo " "
         echo " "
         echo " "
