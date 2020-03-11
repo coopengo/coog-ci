@@ -109,6 +109,14 @@ chronic $COOG_CODE_DIR/web build coopengo/web:"$BRANCH"-latest "coog-api:$BRANCH
 echo "Building demo database"
 chronic $COOG_CODE_DIR/coog demo
 
+if [[ "$?" != 0 ]]; then
+    >&2 echo "Failed to build a demo database, aborting"
+    curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"$BRANCH : APIs KO, cannot build demo\"}" \
+        "$SLACK_WEBHOOK"
+    exit 1
+fi
+
 echo "Starting coog server"
 chronic $COOG_CODE_DIR/coog server 1
 
