@@ -27,9 +27,16 @@ _tag_repository() {
     cd "$repo" || return 1
 
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+    [ "$version" == "2.7" ] && version='master'
 
-    git fetch -p "$REMOTE" "coog-$version" >/dev/null
-    commit="$(git rev-list -n 1 "$REMOTE/coog-$version")"
+    if [ "$version" == "master" ]
+    then
+        git fetch -p "$REMOTE" "$version" >/dev/null
+        commit="$(git rev-list -n 1 "$REMOTE/$version")"
+    else
+        git fetch -p "$REMOTE" "coog-$version" >/dev/null
+        commit="$(git rev-list -n 1 "$REMOTE/coog-$version")"
+    fi
     echo "Creating tag $TAG on $commit"
     git tag -a "coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
     _push "coog-$TAG"
@@ -43,6 +50,7 @@ _tag_customers() {
 
     git fetch -p "$REMOTE" >/dev/null
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
+    [ "$version" == "2.7" ] && version='master'
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
         echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
         commit=$(git rev-list -n 1 "$branch")
@@ -93,6 +101,7 @@ update_version() {
     else
         version='master'
     fi
+    [ "$version" == "coog-2.7" ] && version='master'
 
     if [ "$(basename "$repo")" == "coog" ]; then
         git checkout "$version" 
