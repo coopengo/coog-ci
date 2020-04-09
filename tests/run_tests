@@ -19,6 +19,13 @@ export KUBERNETES=false
 
 BRANCH=$1
 
+if [[ "$BRANCH" = "master" ]]; then
+    TAG_NAME=master
+    export NO_BUILD=1
+else
+    TAG_NAME="$BRANCH-latest"
+fi
+
 if  [[ "$BRANCH" = "coog-2.0" ]] || [[ "$BRANCH" = "coog-2.2" ]] || [[ "$BRANCH" = "coog-2.4" ]]; then
     export CACHE_DB=x
 fi
@@ -63,10 +70,21 @@ chronic $COOG_CODE_DIR/init
 yes | EDITOR="touch" $COOG_CODE_DIR/conf edit
 yes | $COOG_CODE_DIR/net create > /dev/null
 
+# Autoinstalled, breaks docker login
+chronic apt remove --purge -y golang-docker-credential-helpers
+
+echo "Logging in to docker"
+chronic docker login --username "$DOCKER_LOGIN" --password "$DOCKER_PASSWORD"
+
 # Force coog image for ./coog redis commands
-echo "COOG_IMAGE=coopengo/coog:$BRANCH-latest" >> $COOG_DATA_DIR/config
+echo "COOG_IMAGE=coopengo/coog:$TAG_NAME" >> $COOG_DATA_DIR/config
 chronic chmod -R 0777 /tmp/coog-data/coog
 chronic git -C $COOG_DATA_DIR commit -am "Force image"
+
+# On master, pull jenkins build image
+if [[ "$BRANCH" == "master" ]]; then
+    chronic docker pull "coopengo/coog:$TAG_NAME"
+fi
 
 echo 'Start postgres'
 chronic $COOG_CODE_DIR/postgres server
@@ -76,18 +94,20 @@ chronic $COOG_CODE_DIR/redis server
 
 echo 'Start tests'
 # Change access rights for generated documents
-chronic $COOG_CODE_DIR/test "$BRANCH-latest" "coog:$BRANCH" \
+chronic $COOG_CODE_DIR/test "$TAG_NAME" "coog:$BRANCH" \
     "trytond-modules:$BRANCH" "trytond:$BRANCH" "proteus:$BRANCH" "sao:$BRANCH"
 
 if [ "$?" = "0" ]; then
-    # Autoinstalled, breaks docker login
-    chronic apt remove --purge -y golang-docker-credential-helpers
+    if [[ "$BRANCH" != "master" ]]; then
+        echo "Pushing image"
+        chronic docker push "coopengo/coog:$TAG_NAME"
+    else
+        echo "Retagging to stable"
+        chronic docker tag "coopengo/coog:$TAG_NAME" "coopengo/coog:stable"
 
-    echo "Logging in to docker"
-    chronic docker login --username "$DOCKER_LOGIN" --password "$DOCKER_PASSWORD"
-
-    echo "Pushing image"
-    chronic docker push "coopengo/coog:$BRANCH-latest"
+        echo "Pushing image"
+        chronic docker push "coopengo/coog:stable"
+    fi
 
     echo "Sending slack notification"
     curl -X POST -H 'Content-type: application/json' \
