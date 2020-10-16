@@ -150,7 +150,7 @@ update_version() {
             local new_customer_branch; new_customer_branch="$customer-coog-$TAG"
             create_and_push_new_branch $new_customer_branch
             _push $new_customer_branch
-            git checkout $customer
+            git checkout $customer-master
             dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
             update_tryton_cfg "$dev_version.0"
             git commit -am "Increase version number to $dev_version"
