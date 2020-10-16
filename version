@@ -154,7 +154,7 @@ update_version() {
             dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
             update_tryton_cfg "$dev_version.0"
             git commit -am "Increase version number to $dev_version"
-            _push $customer
+            _push $customer-master
         done
     elif [ "$(basename "$repo")" == "trytond-modules" ] && [ "$MAJOR" == true ]; then
         git checkout "$version" 
