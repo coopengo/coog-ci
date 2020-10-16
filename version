@@ -142,7 +142,7 @@ update_version() {
         done
     elif [ "$(basename "$repo")" == "customers" ] && [ "$MAJOR" == true ]; then
         for customer in $CUSTOMERS; do
-            git checkout $customer
+            git checkout $customer-master
             git pull
             update_tryton_cfg "$TAG.0"
             git commit -am "Prepare release $TAG"
