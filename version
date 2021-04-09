@@ -27,7 +27,7 @@ _tag_repository() {
     cd "$repo" || return 1
 
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
-    [ "$version" == "2.7" ] && version='master'
+    [ "$version" == "2.13" ] && version='master'
 
     if [ "$version" == "master" ]
     then
@@ -50,7 +50,7 @@ _tag_customers() {
 
     git fetch -p "$REMOTE" >/dev/null
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
-    [ "$version" == "2.7" ] && version='master'
+    [ "$version" == "2.13" ] && version='master'
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
         echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
         commit=$(git rev-list -n 1 "$branch")
@@ -101,7 +101,7 @@ update_version() {
     else
         version='master'
     fi
-    [ "$version" == "coog-2.7" ] && version='master'
+    [ "$version" == "coog-2.13" ] && version='master'
 
     if [ "$(basename "$repo")" == "coog" ]; then
         git checkout "$version" 
