@@ -10,6 +10,8 @@ Usage: ./version -t TAG [ OPTIONS ]
         The remote on which to work in git. Default is origin.
     -m --major
         Indicate if this is a new major version, need -t with major version number.
+    --tag-master-for-customers
+        List of customers for which master branches will be tagged
     --nopush
         Do not push tag to remote. Default is false.
 """
@@ -51,6 +53,8 @@ _tag_customers() {
     git fetch -p "$REMOTE" >/dev/null
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
     [ "$version" == "2.13" ] && version='master'
+
+    # Tag version branches
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
         echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
         commit=$(git rev-list -n 1 "$branch")
@@ -58,6 +62,19 @@ _tag_customers() {
         echo "Applying tag $TAG to $branch"
         git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
         _push "$client"-coog"-$TAG" 
+    done
+    [ "$version" != "master" ] && return
+
+    # Tag master branches for specified clients
+    for client in $(git branch -r | sed -E "s:$REMOTE/(\w+)-master:\1:"); do
+        if [[ "$MASTER_CUSTOMERS" =~ "$client" ]]; then
+            branch="$REMOTE/$client-master"
+            echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
+            commit=$(git rev-list -n 1 "$branch")
+            echo "Applying tag $TAG to $branch"
+            git tag -a "$client-coog-$TAG" "$commit" -m "Version created: $(date --iso)" >/dev/null
+            _push "$client"-coog-"$TAG"
+        fi
     done
 }
 
@@ -242,6 +259,10 @@ while [[ $# -gt 0 ]]; do
             [ -z "$CUSTOMERS" ] && echo "Please set the CUSTOMERS environment variable" \
                 "with the name of the development branch for each customer," \
                 "e.g. 'export CUSTOMERS=\"customer1 customer2 customer3\"'" && exit 1
+            ;;
+        --tag-master-for-customers)
+            MASTER_CUSTOMERS="$2"
+            shift
             ;;
         --nopush)
             NO_PUSH=true
