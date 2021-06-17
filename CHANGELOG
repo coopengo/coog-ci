@@ -1,3 +1,4 @@
+* Enable tagging of specific clients in customers repo master branches
 * Add unoconv image generation
 * Fix issue when integrating 2.0 after 1.14: bench folder owner is not the same
 * Add correction version update instead of current version
