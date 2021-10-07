@@ -14,6 +14,9 @@ Usage: ./version -t TAG [ OPTIONS ]
         Do not push tag to remote. Default is false.
 """
 
+YEAR_AND_WEEK_NUMBER=$(date +%g%W)
+# the format is for 2140 on week 40 of year 2021
+
 _push () {
     local to_push; to_push=$1;
     if [ "$NO_PUSH" == false ]; then
@@ -27,7 +30,7 @@ _tag_repository() {
     cd "$repo" || return 1
 
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
-    [ "$version" == "2.13" ] && version='master'
+    [ "$version" == "2.15" ] && version='master'
 
     if [ "$version" == "master" ]
     then
@@ -50,7 +53,7 @@ _tag_customers() {
 
     git fetch -p "$REMOTE" >/dev/null
     version=$(echo "$TAG" | grep -Po '^(\d+\.\d+)')
-    [ "$version" == "2.13" ] && version='master'
+    [ "$version" == "2.15" ] && version='master'
     for branch in $(git branch -r | grep -Po "$REMOTE/\w+-coog-$version"); do
         echo "${branch//\// }" | xargs git fetch -p 2>/dev/null
         commit=$(git rev-list -n 1 "$branch")
@@ -101,7 +104,7 @@ update_version() {
     else
         version='master'
     fi
-    [ "$version" == "coog-2.13" ] && version='master'
+    [ "$version" == "coog-2.15" ] && version='master'
 
     if [ "$(basename "$repo")" == "coog" ]; then
         git checkout "$version" 
@@ -114,8 +117,8 @@ update_version() {
         fi
 
         if [ "$MAJOR" == true ]; then
-            local full_version; full_version="coog-$TAG.0"
-            update_tryton_cfg "$TAG.0"
+            local full_version; full_version="coog-$TAG.$YEAR_AND_WEEK_NUMBER"
+            update_tryton_cfg "$TAG.$YEAR_AND_WEEK_NUMBER"
             find . -name CHANGELOG | xargs -I {} sed -i "1iVersion $TAG - `date --iso`" {}
             update_doc $TAG
             git commit -am "Prepare release $full_version"
@@ -126,7 +129,7 @@ update_version() {
             git checkout master
             local dev_version;
             dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
-            update_tryton_cfg "$dev_version.0"
+            update_tryton_cfg "$dev_version.$YEAR_AND_WEEK_NUMBER"
             update_doc $dev_version
             git commit -am "Increase version number to $dev_version"
             _push $version
@@ -144,7 +147,7 @@ update_version() {
         for customer in $CUSTOMERS; do
             git checkout $customer-master
             git pull
-            update_tryton_cfg "$TAG.0"
+            update_tryton_cfg "$TAG.$YEAR_AND_WEEK_NUMBER"
             git commit -am "Prepare release $TAG"
 
             local new_customer_branch; new_customer_branch="$customer-coog-$TAG"
@@ -152,7 +155,7 @@ update_version() {
             _push $new_customer_branch
             git checkout $customer-master
             dev_version="${TAG:0:2}$(( ${TAG:2} + 1 ))"
-            update_tryton_cfg "$dev_version.0"
+            update_tryton_cfg "$dev_version.$YEAR_AND_WEEK_NUMBER"
             git commit -am "Increase version number to $dev_version"
             _push $customer-master
         done
@@ -171,12 +174,12 @@ update_version() {
             git submodule foreach git push -u $new_branch
         fi
         git commit -am "Set submodules branches to $new_branch"
-        local full_version; full_version="coog-$TAG.0"
+        local full_version; full_version="coog-$TAG.$YEAR_AND_WEEK_NUMBER"
         git tag -a "$full_version" -m "$full_version"
         _push $new_branch
         _push $full_version
     elif [ "$(basename "$repo")" == "tryton" ] && [ "$MAJOR" == true ]; then
-        local full_version; full_version="coog-$TAG.0"
+        local full_version; full_version="coog-$TAG.$YEAR_AND_WEEK_NUMBER"
         git checkout "$version"
         git pull
         update_client_version "$TAG"
@@ -195,7 +198,7 @@ update_version() {
         git checkout "$version" 
         git pull
         create_and_push_new_branch "coog-$TAG"
-        local full_version; full_version="coog-$TAG.0"
+        local full_version; full_version="coog-$TAG.$YEAR_AND_WEEK_NUMBER"
         git tag -a "$full_version" -m "$full_version"
         _push $full_version
     fi
