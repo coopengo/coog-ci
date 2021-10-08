@@ -171,7 +171,7 @@ update_version() {
         git submodule foreach git pull
         git submodule foreach git checkout -b $new_branch
         if [ "$NO_PUSH" == false ]; then
-            git submodule foreach git push -u $new_branch
+            git submodule foreach git push origin $new_branch
         fi
         git commit -am "Set submodules branches to $new_branch"
         local full_version; full_version="coog-$TAG.$YEAR_AND_WEEK_NUMBER"
