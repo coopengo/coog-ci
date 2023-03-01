@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# In order to use more flags in Dockerfile
+export DOCKER_BUILDKIT=1
+ 
+USAGE="""
+Usage:      ./build_image_web VERSION [OPTIONS]
+
+Build web images named coopengo/web-CUSTOMER:VERSION
+
+VERSION:                The version you want to build for every client
+	                You must precise only one version to test
+	                ex : 2.0.31
+Options: 
+    -c, --customer      Allow to precise a customer for who you
+                        want to build the image.                      
+    -a, --all           Will read the file web_customers line by
+                        line and create a web image for each 
+                        of them (set by default)
+    -v, --verbose       Explain what is being done during the
+                        build of the image
+    -h, --help          Display this guide
+  """
+
+_usage(){
+    echo "$USAGE"
+}
+
+_build_single_img(){
+    NAME=$1
+    SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+    if [[ "$verbosity" == true ]]; then
+        echo "docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default ."
+        docker build --progress=plain --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default "$SCRIPTPATH"
+
+    else
+        echo "docker build --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default ."
+        docker build --no-cache --tag="coopengo/web-$NAME:$image_version" --build-arg CUSTOMER="$NAME" --build-arg VERSION_TAG="$gh_branch_version" --build-arg IMPORT="$docker_import" --build-arg VERSION="$image_version" --ssh default "$SCRIPTPATH"
+    
+    fi
+}
+
+_build_image_from_file(){
+    
+    SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+    file="${SCRIPTPATH}/web_customers"
+    
+    while IFS= read -r line
+        do
+            echo $line
+            NAME=${line%:*}
+            _build_single_img "$NAME"
+            echo "docker push coopengo/web-$NAME:$image_version"
+            docker push "coopengo/web-$NAME:$image_version"
+        done < "$file"
+}
+
+# Script starts here 
+
+is_version=false
+IS_ALL=true
+verbosity=false
+
+# Parsing args
+if [[ $# -lt 1 ]]; then
+    echo ""
+    echo "Wrong arguments" && _usage && exit 1
+fi 
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+    _usage && exit 1
+fi
+
+echo $1 | grep -Eq '[0-9]*\.[0-9]*\.[0-9]*' && is_version=true
+
+if [[ "$is_version" == false ]]; then
+    echo ""
+    echo "Not a valid version" && _usage && exit 1
+fi
+
+major_version="$(cut -d'.' -f1 <<<"$1")"
+minor_version="$(cut -d'.' -f2 <<<"$1")" 
+gh_branch_version="$major_version.$minor_version"
+image_version=$1
+docker_import="coopengo/web:$image_version"
+shift
+
+
+
+while [[ $# -ge 1 ]]; do
+
+    arg="$1"
+    echo "arg=" $arg
+    case $arg in
+        -c|--customer)
+            IS_ALL=false
+            SPEC_NAME=${2:-"no_spec"}
+
+            if [[ "$SPEC_NAME" == "no_spec" ]] || [[ "$SPEC_NAME" =~ -.* ]];then
+                echo "Invalid client name / client name not specified" && _usage && exit 1
+            else 
+                _build_single_img "$SPEC_NAME"
+                shift
+            fi
+
+            shift
+            ;;
+        -a|--all)
+            IS_ALL=true
+            shift
+            ;;
+        -v|--verbose)
+            verbosity=true
+            shift
+            ;;
+        *)
+            echo "Invalid argument $arg." && _usage && exit 1
+            ;;
+    esac
+done
+
+if [[ "$IS_ALL" == true ]];then
+    _build_image_from_file
+fi
+
